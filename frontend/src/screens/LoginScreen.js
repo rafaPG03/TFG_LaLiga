@@ -9,7 +9,8 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
-  ScrollView
+  ScrollView,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
 
@@ -19,10 +20,29 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
   const [password, setPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false); // Nuevo estado
 
-  const handleLogin = () => {
-    // Aquí iría la lógica para conectar con tu base de datos
-    console.log('Intentando iniciar sesión con:', email, password);
-    alert(`Intentando entrar con: ${email}\n(Aquí conectarás con tu backend)`);
+  const handleLogin = async () => {
+    if(email.trim() === '' || password.trim() === '') {
+      Alert.alert('Error', 'Por favor, completa todos los campos');
+      return;
+    }
+    try {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/usuarios/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // ¡Éxito! Aquí podrías guardar el usuario en un estado global
+        navigation.navigate('Inicio'); // O la pantalla principal de tu app
+      } else {
+        Alert.alert("Error", data.error || "Datos incorrectos");
+      }
+      } catch (error) {
+        Alert.alert("Error", "No se pudo conectar con el servidor");
+      }
   };
 
   return (
@@ -51,11 +71,11 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
         <View style={styles.formContainer}>
           
           {/* Input de Email */}
-          <Text style={styles.inputLabel}>Correo Electrónico</Text>
+          <Text style={styles.inputLabel}>Nombre de usuario o Correo Electrónico</Text>
           <View style={styles.inputWrapper}>
             <TextInput
               style={styles.input}
-              placeholder="Introduce tu correo electrónico"
+              placeholder="Introduce tu nombre de usuario o correo electrónico"
               placeholderTextColor="#A0A0A0"
               keyboardType="email-address"
               autoCapitalize="none" // Importante para emails

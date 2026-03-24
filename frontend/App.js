@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // Importamos las pantallas (ajusta la ruta según donde las guardes)
 import LoginScreen from './src/screens/LoginScreen';
 import RegistroScreen from './src/screens/RegistroScreen';
+import InicioScreen from './src/screens/InicioScreen';
 
 // Creamos la instancia del Stack
 const Stack = createNativeStackNavigator();
@@ -21,6 +22,7 @@ export default function App() {
         {/* Definimos las pantallas disponibles en la "pila" */}
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Registro" component={RegistroScreen} />
+        <Stack.Screen name="Inicio" component={InicioScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
