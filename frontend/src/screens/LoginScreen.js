@@ -13,6 +13,9 @@ import {
   Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const SESSION_KEY = '@tfg/session';
 
 export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
   // Estados para guardar lo que escribe el usuario
@@ -35,8 +38,14 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
       const data = await response.json();
 
       if (response.ok) {
-        // ¡Éxito! Aquí podrías guardar el usuario en un estado global
-        navigation.navigate('Inicio'); // O la pantalla principal de tu app
+        if (data?.usuario) {
+          await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data.usuario));
+        }
+
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'MainApp' }],
+        });
       } else {
         Alert.alert("Error", data.error || "Datos incorrectos");
       }

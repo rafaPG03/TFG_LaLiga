@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import CustomHeader from '../components/header';
 
 const RADIO_FECHAS = 4;
 
@@ -155,19 +156,11 @@ export default function InicioScreen({ navigation }) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="dark-content" />
-
-      <View style={styles.topBar}>
-        <TouchableOpacity style={styles.iconButton} activeOpacity={0.8}>
-          <Ionicons name="menu" size={28} color="#103a5d" />
-        </TouchableOpacity>
-
-        <Text style={styles.topBarTitle}>Partidos</Text>
-
-        <TouchableOpacity style={styles.iconButton} activeOpacity={0.8}>
-          <Ionicons name="search" size={24} color="#103a5d" />
-        </TouchableOpacity>
-      </View>
+      <CustomHeader
+        title="Partidos"
+        onMenuPress={() => navigation.openDrawer()}
+        onSearchPress={() => Alert.alert('Función de búsqueda no implementada')}
+      />
 
       <ScrollView
         contentContainerStyle={styles.screenContent}
@@ -291,30 +284,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f4f8fc',
-  },
-  topBar: {
-    height: 86,
-    paddingTop: Platform.OS === 'ios' ? 42 : 28,
-    paddingHorizontal: 16,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dbe7f2',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: '#eaf3fb',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  topBarTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#103a5d',
   },
   screenContent: {
     paddingBottom: 26,
