@@ -15,6 +15,7 @@ import EquiposScreen from './src/screens/EquiposScreen';
 import JugadoresScreen from './src/screens/JugadoresScreen';
 import PartidosScreen from './src/screens/PartidosScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
+import DetalleEquipoScreen from './src/screens/DetalleEquipoScreen';
 import CustomDrawer from './src/components/menu';
 
 const Stack = createNativeStackNavigator();
@@ -31,6 +32,7 @@ function DrawerNavigator() {
       <Drawer.Screen name="Inicio" component={InicioScreen} />
       <Drawer.Screen name="Temporadas" component={TemporadaScreen} />
       <Drawer.Screen name="Equipos" component={EquiposScreen} />
+      <Drawer.Screen name="DetalleEquipo" component={DetalleEquipoScreen} />
       <Drawer.Screen name="Jugadores" component={JugadoresScreen} />
       <Drawer.Screen name="Partidos" component={PartidosScreen} />
       <Drawer.Screen name="Ajustes" component={AjustesScreen} />

@@ -18,14 +18,5 @@ router.get('/:id', equipoController.getEquipoPorId);
 }
 */ 
 
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM dim_equipo');
-    res.json(result.rows);
-  } catch (error) {     
-    console.error('Error al obtener los equipos:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
-  }
-}
-);
+router.get('/', equipoController.getEquipos);
 module.exports = router;

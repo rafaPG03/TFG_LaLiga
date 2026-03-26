@@ -17,4 +17,14 @@ const getEquipoPorId = async (req, res) => {
   }
 };
 
-module.exports = { getEquipoPorId };
+const getEquipos = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT id_equipo, nombre_equipo, logo_url FROM dim_equipo ORDER BY nombre_equipo');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener los equipos:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+module.exports = { getEquipoPorId, getEquipos };
