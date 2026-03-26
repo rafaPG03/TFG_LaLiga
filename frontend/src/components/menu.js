@@ -10,7 +10,7 @@ import {
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
 const SESSION_KEY = '@tfg/session';
 
@@ -75,15 +75,20 @@ export default function CustomDrawer(props) {
 			showsVerticalScrollIndicator={false}
 		>
 			<View>
-				<View style={styles.profileSection}>
-					<Image
-						source={{ uri: 'https://i.pravatar.cc/200?img=12' }}
+				<TouchableOpacity
+					style={styles.profileSection}
+					activeOpacity={0.8}
+					onPress={() => irAPantalla('Perfil')}
+				>
+					<MaterialCommunityIcons
+						name="account-circle"
+						size={74}
+						color="#1f6fa7"
 						style={styles.avatar}
 					/>
 					<Text style={styles.profileName}>{nombreUsuario}</Text>
 					<Text style={styles.profileSubtitle}>Bienvenido de nuevo</Text>
-				</View>
-
+				</TouchableOpacity>
 				<View style={styles.optionsSection}>
 					<Text style={styles.blockTitle}>Opciones</Text>
 

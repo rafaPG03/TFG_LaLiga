@@ -3,17 +3,16 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
-  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Calendar } from 'react-native-calendars';
 import CustomHeader from '../components/header';
 
 const RADIO_FECHAS = 4;
@@ -73,7 +72,7 @@ const construirVentanaFechas = (fechaCentro, radio = RADIO_FECHAS) => {
 
 export default function InicioScreen({ navigation }) {
   const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaHoyISO);
-  const [fechaInput, setFechaInput] = useState(fechaHoyISO);
+  const [calendarioVisible, setCalendarioVisible] = useState(false);
   const [partidosDelDia, setPartidosDelDia] = useState([]);
   const [cargando, setCargando] = useState(false);
   const [errorCarga, setErrorCarga] = useState('');
@@ -129,19 +128,6 @@ export default function InicioScreen({ navigation }) {
 
   const seleccionarFecha = (fecha) => {
     setFechaSeleccionada(fecha);
-    setFechaInput(fecha);
-  };
-
-  const aplicarFechaManual = () => {
-    const fechaNormalizada = fechaInput.trim();
-    const fechaValida = parsearFechaISO(fechaNormalizada);
-
-    if (!fechaValida) {
-      Alert.alert('Fecha invalida', 'Usa el formato yyyy-mm-dd. Ejemplo: 2015-08-22');
-      return;
-    }
-
-    seleccionarFecha(formatearFechaISO(fechaValida));
   };
 
   const formatearHora = (hora) => {
@@ -178,22 +164,13 @@ export default function InicioScreen({ navigation }) {
               <Ionicons name="chevron-back" size={20} color="#1f6fa7" />
             </TouchableOpacity>
 
-            <TextInput
-              style={styles.dateInput}
-              value={fechaInput}
-              onChangeText={setFechaInput}
-              placeholder="yyyy-mm-dd"
-              placeholderTextColor="#7f9bb1"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
             <TouchableOpacity
-              style={styles.goButton}
-              onPress={aplicarFechaManual}
+              style={styles.calendarButton}
+              onPress={() => setCalendarioVisible(true)}
               activeOpacity={0.85}
             >
-              <Text style={styles.goButtonText}>Ir</Text>
+              <Ionicons name="calendar-outline" size={18} color="#1f6fa7" />
+              <Text style={styles.calendarButtonText}>{fechaSeleccionada}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -277,6 +254,50 @@ export default function InicioScreen({ navigation }) {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={calendarioVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setCalendarioVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.calendarModalCard}>
+            <View style={styles.calendarModalHeader}>
+              <Text style={styles.calendarModalTitle}>Selecciona una fecha</Text>
+              <TouchableOpacity
+                style={styles.closeCalendarButton}
+                onPress={() => setCalendarioVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Ionicons name="close" size={18} color="#1f6fa7" />
+              </TouchableOpacity>
+            </View>
+
+            <Calendar
+              current={fechaSeleccionada}
+              onDayPress={(day) => {
+                seleccionarFecha(day.dateString);
+                setCalendarioVisible(false);
+              }}
+              markedDates={{
+                [fechaSeleccionada]: {
+                  selected: true,
+                  selectedColor: '#1f6fa7',
+                },
+              }}
+              theme={{
+                arrowColor: '#1f6fa7',
+                todayTextColor: '#1f6fa7',
+                selectedDayBackgroundColor: '#1f6fa7',
+                textDayFontWeight: '500',
+                textMonthFontWeight: '700',
+                textDayHeaderFontWeight: '600',
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -306,31 +327,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dateInput: {
+  calendarButton: {
     flex: 1,
-    height: 40,
+    height: 38,
     marginHorizontal: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#e8f1f9',
     borderWidth: 1,
-    borderColor: '#d4e1ec',
+    borderColor: '#d1e0ed',
     borderRadius: 10,
     paddingHorizontal: 12,
-    fontSize: 14,
-    color: '#163f61',
-    fontWeight: '600',
-  },
-  goButton: {
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: '#1f6fa7',
-    paddingHorizontal: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 8,
   },
-  goButtonText: {
-    color: '#ffffff',
-    fontSize: 13,
+  calendarButtonText: {
+    marginLeft: 8,
+    color: '#1f4f73',
+    fontSize: 14,
     fontWeight: '700',
   },
   sectionTitle: {
@@ -438,5 +451,38 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#103a5d',
     marginRight: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(13, 33, 51, 0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  calendarModalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#d9e5f0',
+    padding: 12,
+  },
+  calendarModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  calendarModalTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#163f61',
+  },
+  closeCalendarButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#e8f1f9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
