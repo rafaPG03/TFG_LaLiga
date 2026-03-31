@@ -24,6 +24,7 @@ const MENU_OPTIONS = [
 
 export default function CustomDrawer(props) {
 	const [nombreUsuario, setNombreUsuario] = useState('Usuario');
+	const [idUsuario, setIdUsuario] = useState(null);
 
 	useEffect(() => {
 		const cargarSesion = async () => {
@@ -38,6 +39,9 @@ export default function CustomDrawer(props) {
 				if (sesion?.nombre) {
 					setNombreUsuario(sesion.nombre);
 				}
+				if (sesion?.id) {
+					setIdUsuario(sesion.id);
+				}
 			} catch (error) {
 				console.log('No se pudo leer la sesion guardada');
 			}
@@ -46,9 +50,14 @@ export default function CustomDrawer(props) {
 		cargarSesion();
 	}, [props.state?.index]);
 
-	const irAPantalla = (route) => {
-		props.navigation.navigate(route);
-	};
+const irAPantalla = (route) => {
+    if (route === 'Perfil') {
+        // Pasamos el objeto de sesión completo o solo el ID
+        props.navigation.navigate(route, { usuarioId: idUsuario });
+    } else {
+        props.navigation.navigate(route);
+    }
+};
 
 	const cerrarSesion = async () => {
 		try {

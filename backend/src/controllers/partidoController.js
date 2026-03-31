@@ -37,4 +37,49 @@ const getPartidoFecha = async (req, res) => {
   }
 };
 
-module.exports = { getPartidoFecha };
+const getPartidosEntreEquipos = async (req, res) => {
+const { id1, id2 } = req.params;
+
+  // Validación básica: que los IDs sean números y no iguales
+  if (id1 === id2) {
+    return res.status(400).json({ error: 'No puedes comparar un equipo consigo mismo' });
+  }
+
+  try {
+    const query = `
+SELECT 
+    p.id_partido, 
+    p.fecha_hora, 
+    p.temporada,
+    p.goles_local, 
+    p.goles_visitante,
+    el.nombre_equipo AS equipo_local,
+    ev.nombre_equipo AS equipo_visitante,
+    el.logo_url AS logo_local,
+    ev.logo_url AS logo_visitante,
+    t.anio,
+    t.nombre_mes,
+    t.dia,
+    t.jornada
+FROM dim_partidos p
+JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+JOIN dim_equipo el ON p.id_local = el.id_equipo
+JOIN dim_equipo ev ON p.id_visitante = ev.id_equipo
+WHERE (p.id_local = $1 AND p.id_visitante = $2)
+   OR (p.id_local = $2 AND p.id_visitante = $1)
+ORDER BY t.anio DESC, t.mes DESC, t.dia DESC;
+    `;
+
+    const result = await pool.query(query, [id1, id2]);
+    
+    // Si no hay partidos, devolvemos un array vacío pero con status 200
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Error en H2H:", err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+};
+
+
+    
+module.exports = { getPartidoFecha, getPartidosEntreEquipos };

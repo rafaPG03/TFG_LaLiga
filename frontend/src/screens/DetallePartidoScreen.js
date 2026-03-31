@@ -15,20 +15,20 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
 
-export default function AjustesScreen({navigation}) {
+export default function DetallePartidoScreen({navigation}) {
    return (
       <KeyboardAvoidingView
          style={styles.container}
          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
          <CustomHeader
-         title="Ajustes"
+         title="Detalle del Partido"
          onMenuPress={() => navigation.openDrawer()}
          onSearchPress={() => Alert.alert('Función de búsqueda no implementada')}
          />
          <ScrollView contentContainerStyle={styles.screenContent}>
-            <Text style={styles.title}>Ajustes</Text>
-            {/* Aquí puedes agregar la lógica para mostrar los ajustes */}
+            <Text style={styles.title}>Detalle del Partido</Text>
+            {/* Aquí puedes agregar la lógica para mostrar los jugadores */}
          </ScrollView>
       </KeyboardAvoidingView>
    );

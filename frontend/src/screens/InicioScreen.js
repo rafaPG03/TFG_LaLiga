@@ -12,8 +12,32 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Calendar } from 'react-native-calendars';
+import { Calendar, LocaleConfig } from 'react-native-calendars';
 import CustomHeader from '../components/header';
+
+//Configuración del calendario en español
+LocaleConfig.locales['es'] = {
+  monthNames: [
+    'Enero',
+    'Febrero',
+    'Marzo',
+    'Abril',
+    'Mayo',
+    'Junio',
+    'Julio',
+    'Agosto',
+    'Septiembre',
+    'Octubre',
+    'Noviembre',
+    'Diciembre',
+  ],
+  monthNamesShort: ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Sep.', 'Oct.', 'Nov.', 'DDic.'],
+  dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  dayNamesShort: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
+  today: "Hoy",
+};
+
+LocaleConfig.defaultLocale = 'es';
 
 const RADIO_FECHAS = 4;
 
@@ -122,8 +146,8 @@ export default function InicioScreen({ navigation }) {
     };
   }, [fechaSeleccionada]);
 
-  const irDetallePartido = (partido) => {
-    navigation.navigate('DetallePartido', { partido });
+  const irDetallePartido = (idpartido) => {
+    navigation.navigate('DetallePartido', { idpartido });
   };
 
   const seleccionarFecha = (fecha) => {
@@ -229,7 +253,7 @@ export default function InicioScreen({ navigation }) {
               <TouchableOpacity
                 key={String(partido.id_partido)}
                 style={styles.matchCard}
-                onPress={() => irDetallePartido(partido)}
+                onPress={() => irDetallePartido(partido.id_partido)}
                 activeOpacity={0.85}
               >
                 <Text style={styles.matchTime}>{formatearHora(partido.fecha_hora)}</Text>

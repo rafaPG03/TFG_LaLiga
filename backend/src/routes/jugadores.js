@@ -1,15 +1,8 @@
 const express = require('express');
-const pool = require('../config/db');
 const router = express.Router();
+const jugadoresController = require('../controllers/jugadoresController');
 
-router.get('/', async (req, res) => {
-    try{
-        const idEquipo = req.query.id_equipo;
+router.get('/mas-partidos', jugadoresController.get20JugadoresMasPartidos);
+router.get('/', jugadoresController.getJugadores);
 
-        const query = `
-        SELECT j.nombre, j.edad, j.altura, j.peso, j.foto_url
-        FROM dim_jugador j
-        
-        `;
-    }
-})
+module.exports = router;

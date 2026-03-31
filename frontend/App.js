@@ -16,6 +16,8 @@ import JugadoresScreen from './src/screens/JugadoresScreen';
 import PartidosScreen from './src/screens/PartidosScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
 import DetalleEquipoScreen from './src/screens/DetalleEquipoScreen';
+import DetalleJugadorScreen from './src/screens/DetalleJugadorScreen';  
+import DetallePartidoScreen from './src/screens/DetallePartidoScreen';
 import PerfilScreen from './src/screens/PerfilScreen';
 import CustomDrawer from './src/components/menu';
 
@@ -35,7 +37,9 @@ function DrawerNavigator() {
       <Drawer.Screen name="Equipos" component={EquiposScreen} />
       <Drawer.Screen name="DetalleEquipo" component={DetalleEquipoScreen} />
       <Drawer.Screen name="Jugadores" component={JugadoresScreen} />
+      <Drawer.Screen name="DetalleJugador" component={DetalleJugadorScreen} />
       <Drawer.Screen name="Partidos" component={PartidosScreen} />
+      <Drawer.Screen name="DetallePartido" component={DetallePartidoScreen} />
       <Drawer.Screen name="Ajustes" component={AjustesScreen} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} />
     </Drawer.Navigator>

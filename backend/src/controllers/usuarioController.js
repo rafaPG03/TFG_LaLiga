@@ -66,4 +66,26 @@ const loginUsuario = async (req, res) => {
   }
 };
 
-module.exports = { registrarUsuario, loginUsuario };
+const getUsuarioPorId = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = `
+      SELECT id_usuario, nombre_usuario, email 
+      FROM dim_usuario 
+      WHERE id_usuario = $1
+    `;
+    const result = await pool.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Error al obtener perfil" });
+  }
+};
+
+module.exports = { registrarUsuario, loginUsuario, getUsuarioPorId };
