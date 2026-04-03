@@ -15,17 +15,17 @@ const getPartidoFecha = async (req, res) => {
     // 3. Consulta con JOINs para traer nombres de equipos y datos de la jornada
     const query = `
       SELECT 
-        p.id_partido, p.fecha_hora, p.goles_local, p.goles_visitante,
+        p.id_partido, p.hora, p.goles_local, p.goles_visitante,
         eL.nombre_equipo AS equipo_local,
         eV.nombre_equipo AS equipo_visitante,
-        eL.logo_url AS logo_local,
-        eV.logo_url AS logo_visitante
+        eL.logo AS logo_local,
+        eV.logo AS logo_visitante
       FROM dim_partidos p
       JOIN dim_equipo eL ON p.id_local = eL.id_equipo
       JOIN dim_equipo eV ON p.id_visitante = eV.id_equipo
       JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
       WHERE p.id_tiempo = $1
-      ORDER BY p.fecha_hora ASC
+      ORDER BY p.hora ASC
     `;
 
     const result = await pool.query(query, [idTiempoBusqueda]);
@@ -49,14 +49,14 @@ const { id1, id2 } = req.params;
     const query = `
 SELECT 
     p.id_partido, 
-    p.fecha_hora, 
+    p.hora, 
     p.temporada,
     p.goles_local, 
     p.goles_visitante,
     el.nombre_equipo AS equipo_local,
     ev.nombre_equipo AS equipo_visitante,
-    el.logo_url AS logo_local,
-    ev.logo_url AS logo_visitante,
+    el.logo AS logo_local,
+    ev.logo AS logo_visitante,
     t.anio,
     t.nombre_mes,
     t.dia,

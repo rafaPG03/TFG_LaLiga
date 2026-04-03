@@ -171,7 +171,7 @@ export default function JugadoresScreen({navigation}) {
                >
                   <View style={styles.logoContainer}>
                   <Image
-                     source={item.foto_url ? { uri: item.foto_url } : require('../assets/player_default.png')}
+                     source={item.foto ? { uri: item.foto } : require('../assets/player_default.png')}
                      style={styles.jugadorFoto}
                      resizeMode="cover" // Cover suele quedar mejor para caras de jugadores
                   />

@@ -140,7 +140,7 @@ export default function EquiposScreen({ navigation }) {
                >
                   <View style={styles.logoContainer}>
                      <Image
-                        source={{ uri: item.logo_url }}
+                        source={{ uri: item.logo }}
                         style={styles.equipoLogo}
                         resizeMode="contain"
                      />

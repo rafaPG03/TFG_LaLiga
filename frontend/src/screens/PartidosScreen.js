@@ -157,7 +157,7 @@ export default function PartidosScreen({ navigation }) {
          {equipo ? (
             <>
                <Image
-                  source={{ uri: equipo.logo_url }}
+                  source={{ uri: equipo.logo }}
                   style={styles.slotLogo}
                   resizeMode="contain"
                />
@@ -362,7 +362,7 @@ export default function PartidosScreen({ navigation }) {
                               onPress={() => seleccionarEquipo(item)}
                               activeOpacity={0.85}
                            >
-                              <Image source={{ uri: item.logo_url }} style={styles.teamItemLogo} resizeMode="contain" />
+                              <Image source={{ uri: item.logo }} style={styles.teamItemLogo} resizeMode="contain" />
                               <Text style={styles.teamItemName}>{item.nombre_equipo}</Text>
                            </TouchableOpacity>
                         )}

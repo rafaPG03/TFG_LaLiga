@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const equipoController = require('../controllers/equipoController');
 
+router.get('/analisis/stats/:id_equipo', equipoController.getStatsEquipoPorId);
+
+// Rutas normales
 router.get('/:id', equipoController.getEquipoPorId);
+router.get('/', equipoController.getEquipos);
 /* RESPUESTA
 {
     "id_equipo": 543,
@@ -17,6 +21,4 @@ router.get('/:id', equipoController.getEquipoPorId);
     "capacidad": 60721
 }
 */ 
-
-router.get('/', equipoController.getEquipos);
 module.exports = router;

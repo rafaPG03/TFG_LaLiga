@@ -2,17 +2,15 @@ const pool = require('../config/db');
 
 const get20JugadoresMasPartidos = async (req, res) => {
     try {
-        // 1. IMPORTANTE: Usa backticks ( ` ) para queries multilínea.
-        // Las comillas simples ( ' ) dan error si saltas de línea.
         const query = `
             SELECT 
                 j.id_jugador, 
                 j.nombre, 
-                j.foto_url,
+                j.foto,
                 SUM(p.partidos) AS total_partidos
             FROM dim_jugador j
             JOIN h_jugador_temporada p ON j.id_jugador = p.id_jugador
-            GROUP BY j.id_jugador, j.nombre, j.foto_url
+            GROUP BY j.id_jugador, j.nombre, j.foto
             ORDER BY total_partidos DESC
             LIMIT 20
         `;
@@ -37,7 +35,7 @@ const getJugadores = async (req, res) => {
             SELECT 
                 id_jugador, 
                 nombre, 
-                foto_url
+                foto
             FROM dim_jugador
             ORDER BY nombre
         `;
