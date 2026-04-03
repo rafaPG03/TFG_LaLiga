@@ -11,12 +11,25 @@ export default function RegistroScreen({ navigation }) {
     const [mostrarPassword, setMostrarPassword] = useState(false); // Nuevo estado
 
     const handleRegistro = async () => {
+      const regexPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+
       console.log("Intentando conectar a:", process.env.EXPO_PUBLIC_API_URL);
       // 1. Validaciones básicas en el cliente
       if (!usuario || !email || !password || !Confpassword) {
         Alert.alert("Error", "Por favor, rellena todos los campos.");
         return;
       }
+
+
+      if (!regexPassword.test(password)) {
+        Alert.alert(
+          "Contraseña débil",
+          "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número."
+        );
+        return; // Cortamos la ejecución aquí
+      }
+
+      // Si pasa la validación, hacemos el fetch...
 
       if (password !== Confpassword) {
         Alert.alert("Error", "Las contraseñas no coinciden.");
