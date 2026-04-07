@@ -1,6 +1,5 @@
 const { Pool } = require('pg');
 
-// Log para que veas en la consola si están llegando las variables (BORRAR DESPUÉS)
 console.log("Conectando a DB con usuario:", process.env.DB_USER);
 
 const pool = new Pool({

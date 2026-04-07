@@ -11,11 +11,67 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+   Image,
+   FlatList,
+   
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import CustomHeader from '../components/header';
 
-export default function DetallePartidoScreen({navigation}) {
+import PreviaTab from '../components/partido/PreviaPartido';
+import AlineacionTab from '../components/partido/AlineacionPartido';
+import EventosTab from '../components/partido/EventosPartido';
+import PostPartidoTab from '../components/partido/PostPartido';
+
+const Tab = createMaterialTopTabNavigator();
+
+export default function DetallePartidoScreen({navigation, route}) {
+   const id_partido = route.params?.id_partido ?? route.params?.idpartido;
+   const [loading, setLoading] = useState(true);
+   const [partidoInfo, setPartidoInfo] = useState(null);
+   const [extraData, setExtraData] = useState({ h2h: [], destacados: [], estado: null });
+
+   useEffect(() => {
+      cargarDatosPartido();
+   }, [id_partido]);
+
+   const cargarDatosPartido = async () => {
+      try {
+         if (!id_partido) {
+            Alert.alert('Error', 'No se recibió el identificador del partido');
+            return;
+         }
+
+         setLoading(true);
+         
+         // 1. Primero traemos la info básica para saber quiénes son id_local e id_visitante
+         const resInfo = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/partidos/${id_partido}/info`);
+         const info = await resInfo.json();
+         setPartidoInfo(info);
+
+         // 2. Ahora lanzamos el resto en paralelo para ganar velocidad
+         const [resH2H, resDestacados, resEstado] = await Promise.all([
+         fetch(`${process.env.EXPO_PUBLIC_API_URL}/partidos/h2h/${info.id_local}/${info.id_visitante}?id_partido_actual=${id_partido}`),
+         fetch(`${process.env.EXPO_PUBLIC_API_URL}/partidos/${id_partido}/jugadores_destacados`),
+         fetch(`${process.env.EXPO_PUBLIC_API_URL}/partidos/${id_partido}/estado_actual`)
+         ]);
+
+         const [h2h, destacados, estado] = await Promise.all([
+         resH2H.json(),
+         resDestacados.json(),
+         resEstado.json()
+         ]);
+
+         setExtraData({ h2h, destacados, estado });
+      } catch (error) {
+         console.error(error);
+         Alert.alert("Error", "No se pudieron cargar los detalles del partido");
+      } finally {
+         setLoading(false);
+      }
+   };
+
    return (
       <KeyboardAvoidingView
          style={styles.container}
@@ -26,10 +82,107 @@ export default function DetallePartidoScreen({navigation}) {
          onMenuPress={() => navigation.openDrawer()}
          onSearchPress={() => Alert.alert('Función de búsqueda no implementada')}
          />
-         <ScrollView contentContainerStyle={styles.screenContent}>
-            <Text style={styles.title}>Detalle del Partido</Text>
-            {/* Aquí puedes agregar la lógica para mostrar los jugadores */}
-         </ScrollView>
+         <View style = {styles.resultadoContainer}>
+            <Text style={styles.jornadatext}>
+               Jornada {partidoInfo?.jornada} 
+            </Text>
+            <View style={styles.marcadorRow}>
+               <View style={styles.equipoCol}>
+                  <View style={styles.logoEquipoWrap}>
+                     <Image source={{ uri: partidoInfo?.logo_local }} style={styles.logoEquipo} />
+                  </View>
+                  <Text style={styles.nombreEquipo} numberOfLines={2}>
+                     {partidoInfo?.equipo_local}
+                  </Text>
+               </View>
+               <Text style={styles.golesText}>
+                  {partidoInfo ? `${partidoInfo.goles_local} - ${partidoInfo.goles_visitante}` : 'Cargando...'}
+               </Text>
+               <View style={styles.equipoCol}>
+                  <View style={styles.logoEquipoWrap}>
+                     <Image source={{ uri: partidoInfo?.logo_visitante }} style={styles.logoEquipo} />
+                  </View>
+                  <Text style={styles.nombreEquipo} numberOfLines={2}>
+                     {partidoInfo?.equipo_visitante}
+                  </Text>
+               </View>
+            </View>
+            <View style={styles.fecha}>
+               <Ionicons name="time-outline" size={16} color="#d4e5f7" />
+               <Text style={styles.horaText}>{partidoInfo?.dia} {partidoInfo?.nombre_mes} {partidoInfo?.anio}</Text>
+            </View>  
+         </View>
+         <Tab.Navigator
+         screenOptions={{
+            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
+            tabBarIndicatorStyle: { backgroundColor: '#e20613' }, // Rojo LaLiga
+            tabBarActiveTintColor: '#12233f',
+         }}
+         >
+            <Tab.Screen name="Previa">
+               {(props) => (
+                  <PreviaTab
+                     {...props}
+                     route={{
+                        ...props.route,
+                        params: {
+                           ...props.route?.params,
+                           id_partido,
+                           partidoInfo,
+                           h2h: extraData.h2h,
+                           destacados: extraData.destacados,
+                           estado: extraData.estado,
+                        },
+                     }}
+                  />
+               )}
+            </Tab.Screen>
+            <Tab.Screen name="Alineacion">
+               {(props) => (
+                  <AlineacionTab
+                     {...props}
+                     route={{
+                        ...props.route,
+                        params: {
+                           ...props.route?.params,
+                           id_partido,
+                           partidoInfo,
+                        },
+                     }}
+                  />
+               )}
+            </Tab.Screen>
+            <Tab.Screen name="Eventos">
+               {(props) => (
+                  <EventosTab
+                     {...props}
+                     route={{
+                        ...props.route,
+                        params: {
+                           ...props.route?.params,
+                           id_partido,
+                           partidoInfo,
+                        },
+                     }}
+                  />
+               )}
+            </Tab.Screen>
+            <Tab.Screen name="Post-Partido">
+               {(props) => (
+                  <PostPartidoTab
+                     {...props}
+                     route={{
+                        ...props.route,
+                        params: {
+                           ...props.route?.params,
+                           id_partido,
+                           partidoInfo,
+                        },
+                     }}
+                  />
+               )}
+            </Tab.Screen>
+         </Tab.Navigator>
       </KeyboardAvoidingView>
    );
 }
@@ -39,6 +192,74 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f4f8fc',
   },
+   resultadoContainer: {
+      marginHorizontal: 16,
+      marginTop: 14,
+      marginBottom: 10,
+      backgroundColor: '#1f4f7a',
+      borderRadius: 18,
+      paddingHorizontal: 14,
+      paddingVertical: 16,
+   },
+   jornadatext: {
+      textAlign: 'center',
+      fontSize: 16,
+      fontWeight: '700',
+      color: '#eef6ff',
+      marginBottom: 14,
+   },
+   marcadorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+   },
+   equipoCol: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 4,
+   },
+   logoEquipoWrap: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: '#ffffff',
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+   },
+   logoEquipo: {
+      width: '78%',
+      height: '78%',
+      resizeMode: 'contain',
+   },
+   nombreEquipo: {
+      marginTop: 8,
+      textAlign: 'center',
+      color: '#eef6ff',
+      fontSize: 13,
+      fontWeight: '600',
+   },
+   golesText: {
+      minWidth: 90,
+      textAlign: 'center',
+      color: '#ffffff',
+      fontSize: 30,
+      fontWeight: '800',
+      letterSpacing: 0.6,
+   },
+   fecha: {
+      marginTop: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+   },
+   horaText: {
+      color: '#d4e5f7',
+      fontSize: 14,
+      fontWeight: '600',
+   },
   screenContent: {
     paddingBottom: 26,
   }

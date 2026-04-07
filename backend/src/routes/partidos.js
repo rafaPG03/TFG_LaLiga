@@ -12,4 +12,6 @@ router.get('/:id_partido/jugadores_destacados', partidoController.getJugadoresDe
 router.get('/:id_partido/estado_actual', partidoController.getEstadoActualPartido);
 /* Información de un partido */
 router.get('/:id_partido/info', partidoController.getInfoPartido);
+/* Eventos de un partido */
+router.get('/:id_partido/eventos', partidoController.getEventosPartido);
 module.exports = router;

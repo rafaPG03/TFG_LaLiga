@@ -146,8 +146,8 @@ export default function InicioScreen({ navigation }) {
     };
   }, [fechaSeleccionada]);
 
-  const irDetallePartido = (idpartido) => {
-    navigation.navigate('DetallePartido', { idpartido });
+  const irDetallePartido = (id_partido) => {
+    navigation.navigate('DetallePartido', { id_partido });
   };
 
   const seleccionarFecha = (fecha) => {

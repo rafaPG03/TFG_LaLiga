@@ -26,7 +26,7 @@ export default function TemporadaScreen({navigation}) {
          setCargando(true);
          setErrorCarga('');
          try {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/temporadas`);
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/temporadas/annos`);
             if (!response.ok) {
                throw new Error('No se pudieron cargar las temporadas');
             }

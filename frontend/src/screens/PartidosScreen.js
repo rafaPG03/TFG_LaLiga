@@ -148,8 +148,8 @@ export default function PartidosScreen({ navigation }) {
       setErrorPartidos('');
    };
 
-   const irDetallePartido = (idpartido) => {
-      navigation.navigate('DetallePartido', { idpartido });
+   const irDetallePartido = (id_partido) => {
+      navigation.navigate('DetallePartido', { id_partido });
    };
 
    const renderSlotEquipo = (equipo, onPress, etiqueta) => (

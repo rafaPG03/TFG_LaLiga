@@ -50,7 +50,34 @@ const getJugadores = async (req, res) => {
     }
 };
 
+const getJugadorPorId = async (req, res) => {
+    const { id_jugador } = req.params;
+    try {
+        const query = `
+            SELECT
+                id_jugador,
+                nombre,
+                foto
+            FROM dim_jugador
+            WHERE id_jugador = $1
+        `;
+        const result = await pool.query(query, [id_jugador]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Jugador no encontrado' });
+        }
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error al obtener el jugador:', error);
+        res.status(500).json({ 
+            error: 'Error interno del servidor',
+            message: error.message 
+        });
+    }
+};
+
+
 module.exports = {
     get20JugadoresMasPartidos,
-    getJugadores
+    getJugadores,
+    getJugadorPorId
 };
