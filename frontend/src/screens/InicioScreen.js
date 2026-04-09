@@ -256,7 +256,7 @@ export default function InicioScreen({ navigation }) {
                 onPress={() => irDetallePartido(partido.id_partido)}
                 activeOpacity={0.85}
               >
-                <Text style={styles.matchTime}>{formatearHora(partido.fecha_hora)}</Text>
+                <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
 
                 <View style={styles.teamsRow}>
                   <Text style={styles.teamName} numberOfLines={1}>

@@ -92,7 +92,7 @@ const getJugadoresDestacadosPartido = async (req, res) => {
     try {
         // 1. Primero obtenemos los datos del partido para saber IDs de equipos y temporada
         const partidoInfo = await pool.query(
-            'SELECT id_local, id_visitante, temporada FROM dim_partidos WHERE id_partido = $1',
+          'SELECT id_local, id_visitante, temporada FROM dim_partidos WHERE id_partido = $1',
       [partidoId]
         );
 
@@ -101,50 +101,52 @@ const getJugadoresDestacadosPartido = async (req, res) => {
         const { id_local, id_visitante, temporada } = partidoInfo.rows[0];
 
         const queryDestacados = `
-              WITH lideres AS (
-                -- LÍDERES EQUIPO LOCAL
-                (SELECT j.nombre, j.foto, (h.goles + h.asistencias) AS valor, 'G+A' AS categoria, 'local' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $1 AND h.temporada = $3
-                ORDER BY (h.goles + h.asistencias) DESC LIMIT 1)
-                UNION ALL
-                (SELECT j.nombre, j.foto, h.partidos AS valor, 'Partidos' AS categoria, 'local' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $1 AND h.temporada = $3
-                ORDER BY h.partidos DESC LIMIT 1)
-                UNION ALL
-                (SELECT j.nombre, j.foto, h.nota_media AS valor, 'Rating' AS categoria, 'local' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $1 AND h.temporada = $3
-                ORDER BY h.nota_media DESC LIMIT 1)
-
-                UNION ALL
-
-                -- LÍDERES EQUIPO VISITANTE
-                (SELECT j.nombre, j.foto, (h.goles + h.asistencias) AS valor, 'G+A' AS categoria, 'visitante' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $2 AND h.temporada = $3
-                ORDER BY (h.goles + h.asistencias) DESC LIMIT 1)
-                UNION ALL
-                (SELECT j.nombre, j.foto, h.partidos AS valor, 'Partidos' AS categoria, 'visitante' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $2 AND h.temporada = $3
-                ORDER BY h.partidos DESC LIMIT 1)
-                UNION ALL
-                (SELECT j.nombre, j.foto, h.nota_media AS valor, 'Rating' AS categoria, 'visitante' AS tipo_equipo
-                FROM h_jugador_temporada h
-                JOIN dim_jugador j ON h.id_jugador = j.id_jugador
-                WHERE h.id_equipo = $2 AND h.temporada = $3
-                ORDER BY h.nota_media DESC LIMIT 1)
-              )
-              SELECT * FROM lideres;
-            `;
-        const { rows } = await pool.query(queryDestacados, [id_local, id_visitante, temporada]);
+        WITH stats_acumuladas AS (
+            SELECT 
+                h.id_jugador,
+                h.id_equipo,
+                SUM(COALESCE(h.goles, 0) + COALESCE(h.asistencias, 0)) as ga,
+                COUNT(h.id_partido) as total_partidos,
+                AVG(COALESCE(h.nota, 0)) as rating
+            FROM h_jugador_partido h
+            JOIN dim_partidos p ON h.id_partido = p.id_partido
+            WHERE p.temporada = $3 
+              AND p.id_tiempo < (SELECT id_tiempo FROM dim_partidos WHERE id_partido = $4)
+              AND h.id_equipo IN ($1, $2)
+            GROUP BY h.id_jugador, h.id_equipo
+        ),
+        lideres AS (
+            -- LOCAL
+            (SELECT j.id_jugador, j.nombre, j.foto, s.ga AS valor, 'G+A' AS categoria, 'local' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $1 ORDER BY s.ga DESC LIMIT 1)
+            UNION ALL
+            (SELECT j.id_jugador, j.nombre, j.foto, s.total_partidos AS valor, 'Partidos' AS categoria, 'local' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $1 ORDER BY s.total_partidos DESC LIMIT 1)
+            UNION ALL
+            (SELECT j.id_jugador, j.nombre, j.foto, s.rating AS valor, 'Rating' AS categoria, 'local' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $1 ORDER BY s.rating DESC LIMIT 1)
+            
+            UNION ALL
+            
+            -- VISITANTE
+            (SELECT j.id_jugador, j.nombre, j.foto, s.ga AS valor, 'G+A' AS categoria, 'visitante' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $2 ORDER BY s.ga DESC LIMIT 1)
+            UNION ALL
+            (SELECT j.id_jugador, j.nombre, j.foto, s.total_partidos AS valor, 'Partidos' AS categoria, 'visitante' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $2 ORDER BY s.total_partidos DESC LIMIT 1)
+            UNION ALL
+            (SELECT j.id_jugador, j.nombre, j.foto, s.rating AS valor, 'Rating' AS categoria, 'visitante' AS tipo_equipo
+            FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
+            WHERE s.id_equipo = $2 ORDER BY s.rating DESC LIMIT 1)
+        )
+        SELECT * FROM lideres;
+        `;
+        const { rows } = await pool.query(queryDestacados, [id_local, id_visitante, temporada, partidoId]);
 
         res.json({
             local: rows.filter(r => r.tipo_equipo === 'local'),
@@ -293,5 +295,99 @@ ORDER BY e.minuto ASC, e.extra ASC, e.id_evento ASC;
   }
 };
 
+const getAlineacionesPartido = async (req, res) => {
+  const { id_partido } = req.params;
+  const partidoId = Number(id_partido);
 
-module.exports = { getPartidoFecha, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getInfoPartido, getEventosPartido };
+  if (!Number.isInteger(partidoId)) {
+    return res.status(400).json({ error: "id_partido inválido" });
+  }
+
+  try {
+    const query = `
+      SELECT 
+    h.id_partido,
+    h.id_equipo,
+    h.id_jugador,
+    j.nombre,
+    j.foto,
+    h.posicion,
+    h.minutos,
+    h.nota,
+    h.capitan,
+    h.sustituto, -- TRUE si empezó en el banquillo, FALSE si fue titular
+    e.nombre_equipo,
+    e.logo AS logo_equipo
+FROM h_jugador_partido h
+JOIN dim_jugador j ON h.id_jugador = j.id_jugador
+JOIN dim_equipo e ON h.id_equipo = e.id_equipo
+WHERE h.id_partido = $1
+ORDER BY 
+    h.id_equipo, 
+    h.sustituto ASC, -- Primero los titulares (false), luego suplentes (true)
+    CASE 
+        WHEN h.posicion = 'P' THEN 1
+        WHEN h.posicion = 'DF' THEN 2
+        WHEN h.posicion = 'M' THEN 3
+        WHEN h.posicion = 'DL' THEN 4
+        ELSE 5 
+    END;
+    `;
+    const result = await pool.query(query, [partidoId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener alineaciones del partido" });
+  }
+};
+
+const getStatsEquipoPartido = async (req, res) => {
+  const { id_partido } = req.params;
+  const partidoId = Number(id_partido);
+
+  if (!Number.isInteger(partidoId)) {
+    return res.status(400).json({ error: "id_partido inválido" });
+  }
+
+  try {
+    const query = `
+      SELECT 
+    h.id_equipo,
+    e.nombre_equipo,
+    e.logo,
+    h.posesion,
+    h.tiros_totales,
+    h.tiros_a_puerta,
+    h.pases_totales,
+    h.pases_acertados,
+    h.pct_pases_acertados,
+    h.faltas_cometidas,
+    h.corners,
+    h.fueras_de_juego,
+    h.tarjetas_amarillas,
+    h.tarjetas_rojas,
+    h.goles_esperados,
+    h.df_goles_esperados,
+    -- Calculamos la precisión de tiro sobre la marcha si es necesario
+    CASE WHEN h.tiros_totales > 0 
+         THEN ROUND((h.tiros_a_puerta::numeric / h.tiros_totales::numeric) * 100, 1) 
+         ELSE 0 END as precision_tiro
+FROM h_equipo_partido h
+JOIN dim_equipo e ON h.id_equipo = e.id_equipo
+WHERE h.id_partido = $1
+ORDER BY (CASE WHEN h.id_equipo = (SELECT id_local FROM dim_partidos WHERE id_partido = $1) THEN 1 ELSE 2 END)
+    `;
+    const result = await pool.query(query, [partidoId]);
+
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener estadísticas del equipo en el partido" });
+  } 
+};
+
+
+
+
+module.exports = { getPartidoFecha, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getInfoPartido, getEventosPartido, getAlineacionesPartido, getStatsEquipoPartido };

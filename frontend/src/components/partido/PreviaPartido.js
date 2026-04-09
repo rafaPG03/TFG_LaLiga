@@ -1,16 +1,23 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 
-export default function PreviaTab({ route }) {
+export default function PreviaTab({ route, navigation }) {
   const { h2h, destacados, estado, partidoInfo } = route.params || {};
   const ultimosEnfrentamientos = Array.isArray(h2h) ? h2h.slice(0, 5) : [];
+  const destacadosFlat = Array.isArray(destacados) ? destacados : [];
+  const destacadosLocal = Array.isArray(destacados?.local)
+    ? destacados.local
+    : destacadosFlat.filter((item) => item?.tipo_equipo === 'local');
+  const destacadosVisitante = Array.isArray(destacados?.visitante)
+    ? destacados.visitante
+    : destacadosFlat.filter((item) => item?.tipo_equipo === 'visitante');
 
   // GRAFICO
   let vL = 0, vV = 0, e = 0;
   
-  h2h.forEach(p => {
+  (Array.isArray(h2h) ? h2h : []).forEach(p => {
     if (p.ganador === 'Empate') {
       e++;
     } else if (p.ganador === partidoInfo?.equipo_local) { 
@@ -41,6 +48,56 @@ export default function PreviaTab({ route }) {
     if (resultado === 'D') return '#f59e0b';
     return '#dc2626';
   };
+  
+  const IrDetallesPartido = (id_partido) => {
+    navigation.navigate('DetallePartido', { id_partido });
+  }
+
+  const IrDetallesJugador = (id_jugador) => {
+    navigation.navigate('DetalleJugador', { id_jugador });
+  }
+
+  const getDestacadoPorCategoria = (lista, categoria) => {
+    return lista.find((item) => item?.categoria === categoria) || null;
+  };
+
+  const formatearValorDestacado = (jugador) => {
+    if (!jugador) return '-';
+
+    if (jugador.categoria === 'Rating') {
+      const rating = Number(jugador.valor);
+      return Number.isFinite(rating) ? rating.toFixed(2) : '-';
+    }
+
+    return jugador.valor ?? '-';
+  };
+
+  const renderJugador = (jugador) => {
+    if (!jugador) {
+      return <Text style={styles.destacadoEmpty}>-</Text>;
+    }
+
+    const idJugador = jugador?.id_jugador ?? jugador?.id;
+
+    return (
+      <TouchableOpacity
+        style={styles.jugadorCellContent}
+        activeOpacity={idJugador ? 0.8 : 1}
+        disabled={!idJugador}
+        onPress={() => IrDetallesJugador(idJugador)}
+      >
+        <Image source={{ uri: jugador.foto }} style={styles.destacadoFoto} resizeMode="cover" />
+        <Text style={styles.destacadoNombre} numberOfLines={1}>{jugador.nombre || '-'}</Text>
+        <Text style={styles.destacadoValor}>{formatearValorDestacado(jugador)}</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const filasDestacados = [
+    { key: 'partidos', label: 'Mas Partidos', categoria: 'Partidos' },
+    { key: 'golesAsistencias', label: 'Mas G + A', categoria: 'G+A' },
+    { key: 'rating', label: 'Rating', categoria: 'Rating' },
+  ];
 
   const formaLocal = parseForma(estado?.local_forma);
   const formaVisitante = parseForma(estado?.visitante_forma);
@@ -138,7 +195,12 @@ export default function PreviaTab({ route }) {
           </View>
         ) : (
           ultimosEnfrentamientos.map((item) => (
-            <View key={item.id_partido} style={styles.matchCard}>
+            <TouchableOpacity
+              key={item.id_partido}
+              style={styles.matchCard}
+              activeOpacity={0.85}
+              onPress={() => IrDetallesPartido(item.id_partido)}
+            >
               <View style={styles.teamSide}>
                 <Image source={{ uri: item.logo_local }} style={styles.teamLogo} resizeMode="contain" />
                 <Text style={styles.teamName} numberOfLines={2}>
@@ -162,7 +224,7 @@ export default function PreviaTab({ route }) {
                   {item.equipo_visitante}
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
         <BarChart
@@ -180,6 +242,42 @@ export default function PreviaTab({ route }) {
           style={{ marginVertical: 15, borderRadius: 10 }}
         />
       </View>
+      <View style={styles.destacadosContainer}>
+        <Text style={styles.h2hTitle}>Jugadores destacados</Text>
+        {destacadosLocal.length > 0 || destacadosVisitante.length > 0 ? (
+          <View style={styles.destacadosTabla}>
+            <View style={styles.destacadosHeader}>
+              <Text style={[styles.destacadosHeaderText, styles.destacadosColText]}>{partidoInfo?.equipo_local}</Text>
+              <Text style={[styles.destacadosHeaderText, styles.destacadosCentroText]}>Categoria</Text>
+              <Text style={[styles.destacadosHeaderText, styles.destacadosColText]}>{partidoInfo?.equipo_visitante}</Text>
+            </View>
+
+            {filasDestacados.map((fila) => {
+              const jugadorLocal = getDestacadoPorCategoria(destacadosLocal, fila.categoria);
+              const jugadorVisitante = getDestacadoPorCategoria(destacadosVisitante, fila.categoria);
+
+              return (
+                <View key={fila.key} style={styles.destacadoFila}>
+                  <View style={styles.jugadorCell}>
+                    {renderJugador(jugadorLocal)}
+                  </View>
+                  <View style={styles.categoriaCell}>
+                    <Text style={styles.categoriaText}>{fila.label}</Text>
+                  </View>
+                  <View style={styles.jugadorCell}>
+                    {renderJugador(jugadorVisitante)}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No hay destacados para mostrar</Text>
+          </View>
+        )}
+      </View>
+
     </ScrollView>
   );
 }
@@ -352,5 +450,97 @@ const styles = StyleSheet.create({
     color: '#59778f',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  destacadosContainer: {
+    backgroundColor: '#e9f1f8',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#c5d8ea',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+  },
+  destacadosTabla: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d9e5f0',
+    overflow: 'hidden',
+  },
+  destacadosHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#eef5fb',
+    borderBottomWidth: 1,
+    borderBottomColor: '#d9e5f0',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  destacadosHeaderText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#34526a',
+    textAlign: 'center',
+  },
+  destacadosColText: {
+    flex: 1,
+  },
+  destacadosCentroText: {
+    width: 86,
+  },
+  destacadoFila: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf3f8',
+  },
+  jugadorCell: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 10,
+    justifyContent: 'center',
+  },
+  categoriaCell: {
+    width: 86,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f7fbff',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#edf3f8',
+    paddingHorizontal: 4,
+  },
+  categoriaText: {
+    textAlign: 'center',
+    color: '#1d3850',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  jugadorCellContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  destacadoFoto: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#e7eef6',
+  },
+  destacadoNombre: {
+    fontSize: 11,
+    color: '#1d3850',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  destacadoValor: {
+    fontSize: 12,
+    color: '#103a5d',
+    fontWeight: '800',
+  },
+  destacadoEmpty: {
+    textAlign: 'center',
+    color: '#6c879f',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

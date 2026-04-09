@@ -14,4 +14,9 @@ router.get('/:id_partido/estado_actual', partidoController.getEstadoActualPartid
 router.get('/:id_partido/info', partidoController.getInfoPartido);
 /* Eventos de un partido */
 router.get('/:id_partido/eventos', partidoController.getEventosPartido);
+/* Alineaciones de un partido */
+router.get('/:id_partido/alineaciones', partidoController.getAlineacionesPartido);
+/* Stats equipos de un partido */
+router.get('/:id_partido/stats_equipos', partidoController.getStatsEquipoPartido);
+
 module.exports = router;
