@@ -12,110 +12,185 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Calendar, LocaleConfig } from 'react-native-calendars';
 import CustomHeader from '../components/header';
 
-//Configuración del calendario en español
-LocaleConfig.locales['es'] = {
-  monthNames: [
-    'Enero',
-    'Febrero',
-    'Marzo',
-    'Abril',
-    'Mayo',
-    'Junio',
-    'Julio',
-    'Agosto',
-    'Septiembre',
-    'Octubre',
-    'Noviembre',
-    'Diciembre',
-  ],
-  monthNamesShort: ['Ene.', 'Feb.', 'Mar.', 'Abr.', 'May.', 'Jun.', 'Jul.', 'Ago.', 'Sep.', 'Oct.', 'Nov.', 'DDic.'],
-  dayNames: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
-  dayNamesShort: ['Dom.', 'Lun.', 'Mar.', 'Mié.', 'Jue.', 'Vie.', 'Sáb.'],
-  today: "Hoy",
-};
-
-LocaleConfig.defaultLocale = 'es';
-
-const RADIO_FECHAS = 4;
-
-const formatearFechaISO = (fecha) => {
-  const anio = fecha.getFullYear();
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const dia = String(fecha.getDate()).padStart(2, '0');
-
-  return `${anio}-${mes}-${dia}`;
-};
-
-const fechaHoyISO = () => formatearFechaISO(new Date());
-
-const parsearFechaISO = (fechaTexto) => {
-  const patron = /^\d{4}-\d{2}-\d{2}$/;
-
-  if (!patron.test(fechaTexto)) {
-    return null;
+const formatearHora = (hora) => {
+  if (!hora || typeof hora !== 'string') {
+    return '--:--';
   }
 
-  const [anio, mes, dia] = fechaTexto.split('-').map(Number);
-  const fecha = new Date(anio, mes - 1, dia);
-
-  if (
-    Number.isNaN(fecha.getTime()) ||
-    fecha.getFullYear() !== anio ||
-    fecha.getMonth() !== mes - 1 ||
-    fecha.getDate() !== dia
-  ) {
-    return null;
-  }
-
-  return fecha;
+  return hora.slice(0, 5);
 };
 
-const sumarDiasISO = (fechaTexto, cantidadDias) => {
-  const fecha = parsearFechaISO(fechaTexto);
-
-  if (!fecha) {
-    return fechaHoyISO();
+const construirFechaISO = (partido) => {
+  if (partido.fecha_iso) {
+    return partido.fecha_iso;
   }
 
-  fecha.setDate(fecha.getDate() + cantidadDias);
-  return formatearFechaISO(fecha);
+  if (partido.anio && partido.mes && partido.dia) {
+    const mes = String(partido.mes).padStart(2, '0');
+    const dia = String(partido.dia).padStart(2, '0');
+    return `${partido.anio}-${mes}-${dia}`;
+  }
+
+  return 'Sin fecha';
 };
 
-const construirVentanaFechas = (fechaCentro, radio = RADIO_FECHAS) => {
-  const fechas = [];
-
-  for (let i = -radio; i <= radio; i += 1) {
-    fechas.push(sumarDiasISO(fechaCentro, i));
+const formatearFechaCabecera = (fechaISO) => {
+  if (!fechaISO || fechaISO === 'Sin fecha') {
+    return 'Fecha sin información';
   }
 
-  return fechas;
+  const fecha = new Date(`${fechaISO}T00:00:00`);
+  if (Number.isNaN(fecha.getTime())) {
+    return fechaISO;
+  }
+
+  return new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(fecha);
 };
 
 export default function InicioScreen({ navigation }) {
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(fechaHoyISO);
-  const [calendarioVisible, setCalendarioVisible] = useState(false);
+  const [temporadas, setTemporadas] = useState([]);
+  const [jornadas, setJornadas] = useState([]);
+  const [temporadaSeleccionada, setTemporadaSeleccionada] = useState(null);
+  const [jornadaSeleccionada, setJornadaSeleccionada] = useState(null);
   const [partidosDelDia, setPartidosDelDia] = useState([]);
   const [cargando, setCargando] = useState(false);
+  const [cargandoFiltros, setCargandoFiltros] = useState(false);
   const [errorCarga, setErrorCarga] = useState('');
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const [tipoSelector, setTipoSelector] = useState(null);
 
-  const fechasVisibles = useMemo(
-    () => construirVentanaFechas(fechaSeleccionada),
-    [fechaSeleccionada]
-  );
+  useEffect(() => {
+    let pantallaActiva = true;
+
+    const cargarTemporadas = async () => {
+      setCargandoFiltros(true);
+      setErrorCarga('');
+
+      try {
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/temporadas/annos`);
+
+        if (!response.ok) {
+          throw new Error('No se pudieron cargar las temporadas');
+        }
+
+        const data = await response.json();
+
+        if (!pantallaActiva) {
+          return;
+        }
+
+        const temporadasDisponibles = Array.isArray(data)
+          ? data.map((item) => item.temporada).filter((valor) => Number.isInteger(valor))
+          : [];
+
+        setTemporadas(temporadasDisponibles);
+        setTemporadaSeleccionada(temporadasDisponibles[0] ?? null);
+      } catch (error) {
+        if (pantallaActiva) {
+          setErrorCarga('No se pudieron cargar las temporadas');
+        }
+      } finally {
+        if (pantallaActiva) {
+          setCargandoFiltros(false);
+        }
+      }
+    };
+
+    cargarTemporadas();
+
+    return () => {
+      pantallaActiva = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let pantallaActiva = true;
+
+    const cargarJornadas = async () => {
+      if (!temporadaSeleccionada) {
+        setJornadas([]);
+        setJornadaSeleccionada(null);
+        return;
+      }
+
+      setCargandoFiltros(true);
+      try {
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/partidos/jornadas?temporada=${temporadaSeleccionada}`
+        );
+
+        if (!response.ok) {
+          throw new Error('No se pudieron cargar las jornadas');
+        }
+
+        const data = await response.json();
+
+        if (!pantallaActiva) {
+          return;
+        }
+
+        const jornadasRaw = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.jornadas)
+            ? data.jornadas
+            : [];
+
+        const jornadasDisponibles = jornadasRaw
+          .map((item) => item.jornada)
+          .filter((valor) => Number.isInteger(valor));
+
+        const jornadaActual = Number.isInteger(data?.jornada_actual)
+          ? data.jornada_actual + 1
+          : null;
+
+        setJornadas(jornadasDisponibles);
+        setJornadaSeleccionada(
+          jornadaActual && jornadasDisponibles.includes(jornadaActual)
+            ? jornadaActual
+            : jornadasDisponibles[jornadasDisponibles.length - 1] ?? null
+        );
+      } catch (error) {
+        if (pantallaActiva) {
+          setErrorCarga('No se pudieron cargar las jornadas');
+          setJornadas([]);
+          setJornadaSeleccionada(null);
+        }
+      } finally {
+        if (pantallaActiva) {
+          setCargandoFiltros(false);
+        }
+      }
+    };
+
+    cargarJornadas();
+
+    return () => {
+      pantallaActiva = false;
+    };
+  }, [temporadaSeleccionada]);
 
   useEffect(() => {
     let pantallaActiva = true;
 
     const cargarPartidos = async () => {
+      if (!temporadaSeleccionada || !jornadaSeleccionada) {
+        setPartidosDelDia([]);
+        return;
+      }
+
       setCargando(true);
       setErrorCarga('');
 
       try {
         const response = await fetch(
-          `${process.env.EXPO_PUBLIC_API_URL}/partidos?fecha=${fechaSeleccionada}`
+          `${process.env.EXPO_PUBLIC_API_URL}/partidos?temporada=${temporadaSeleccionada}&jornada=${jornadaSeleccionada}`
         );
 
         if (!response.ok) {
@@ -144,23 +219,42 @@ export default function InicioScreen({ navigation }) {
     return () => {
       pantallaActiva = false;
     };
-  }, [fechaSeleccionada]);
+  }, [temporadaSeleccionada, jornadaSeleccionada]);
+
+  const partidosAgrupados = useMemo(() => {
+    const grupos = new Map();
+
+    partidosDelDia.forEach((partido) => {
+      const fechaISO = construirFechaISO(partido);
+
+      if (!grupos.has(fechaISO)) {
+        grupos.set(fechaISO, []);
+      }
+
+      grupos.get(fechaISO).push(partido);
+    });
+
+    return Array.from(grupos.entries()).map(([fechaISO, partidos]) => ({
+      fechaISO,
+      partidos,
+    }));
+  }, [partidosDelDia]);
 
   const irDetallePartido = (id_partido) => {
     navigation.navigate('DetallePartido', { id_partido });
   };
 
-  const seleccionarFecha = (fecha) => {
-    setFechaSeleccionada(fecha);
+  const abrirSelector = (tipo) => {
+    setTipoSelector(tipo);
+    setSelectorVisible(true);
   };
 
-  const formatearHora = (hora) => {
-    if (!hora || typeof hora !== 'string') {
-      return '--:--';
-    }
-
-    return hora.slice(0, 5);
+  const cerrarSelector = () => {
+    setSelectorVisible(false);
+    setTipoSelector(null);
   };
+
+  const opcionesSelector = tipoSelector === 'temporada' ? temporadas : jornadas;
 
   return (
     <KeyboardAvoidingView
@@ -177,62 +271,46 @@ export default function InicioScreen({ navigation }) {
         contentContainerStyle={styles.screenContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.dateSection}>
-          <Text style={styles.sectionTitle}>Selecciona fecha</Text>
-          <View style={styles.dateControlsRow}>
-            <TouchableOpacity
-              style={styles.arrowButton}
-              onPress={() => seleccionarFecha(sumarDiasISO(fechaSeleccionada, -1))}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="chevron-back" size={20} color="#1f6fa7" />
-            </TouchableOpacity>
+        <View style={styles.filterSection}>
+          <Text style={styles.sectionTitle}>Selecciona temporada y jornada</Text>
+          <View style={styles.selectorsRow}>
+            <View style={styles.selectorGroup}>
+              <Text style={styles.filterLabel}>Temporada</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => abrirSelector('temporada')}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.dropdownButtonText}>{temporadaSeleccionada ?? 'Selecciona'}</Text>
+                <Ionicons name="chevron-down" size={18} color="#2b5b84" />
+              </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={styles.calendarButton}
-              onPress={() => setCalendarioVisible(true)}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#1f6fa7" />
-              <Text style={styles.calendarButtonText}>{fechaSeleccionada}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.arrowButton}
-              onPress={() => seleccionarFecha(sumarDiasISO(fechaSeleccionada, 1))}
-              activeOpacity={0.85}
-            >
-              <Ionicons name="chevron-forward" size={20} color="#1f6fa7" />
-            </TouchableOpacity>
+            <View style={styles.selectorGroup}>
+              <Text style={styles.filterLabel}>Jornada</Text>
+              <TouchableOpacity
+                style={[styles.dropdownButton, !jornadas.length && styles.dropdownButtonDisabled]}
+                onPress={() => abrirSelector('jornada')}
+                activeOpacity={0.85}
+                disabled={!jornadas.length}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {jornadaSeleccionada ? `J${jornadaSeleccionada}` : 'Selecciona'}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color="#2b5b84" />
+              </TouchableOpacity>
+            </View>
           </View>
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dateListContent}
-          >
-            {fechasVisibles.map((fecha) => {
-              const activa = fecha === fechaSeleccionada;
-
-              return (
-                <TouchableOpacity
-                  key={fecha}
-                  style={[styles.datePill, activa && styles.datePillActive]}
-                  onPress={() => seleccionarFecha(fecha)}
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.dateText, activa && styles.dateTextActive]}>
-                    {fecha}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+          {cargandoFiltros ? (
+            <View style={styles.filtersLoadingRow}>
+              <ActivityIndicator size="small" color="#1f6fa7" />
+              <Text style={styles.filtersLoadingText}>Cargando filtros...</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.matchesSection}>
-          <Text style={styles.sectionTitle}>Partidos de {fechaSeleccionada}</Text>
-
           {cargando ? (
             <View style={styles.loadingState}>
               <ActivityIndicator size="small" color="#1f6fa7" />
@@ -246,79 +324,91 @@ export default function InicioScreen({ navigation }) {
           ) : partidosDelDia.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-clear-outline" size={34} color="#5f7f9b" />
-              <Text style={styles.emptyStateText}>No hay partidos para esta fecha</Text>
+              <Text style={styles.emptyStateText}>No hay partidos para esta jornada</Text>
             </View>
           ) : (
-            partidosDelDia.map((partido) => (
-              <TouchableOpacity
-                key={String(partido.id_partido)}
-                style={styles.matchCard}
-                onPress={() => irDetallePartido(partido.id_partido)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
+            partidosAgrupados.map((grupo) => (
+              <View key={grupo.fechaISO} style={styles.groupBlock}>
+                <Text style={styles.groupTitle}>{formatearFechaCabecera(grupo.fechaISO)}</Text>
 
-                <View style={styles.teamsRow}>
-                  <Text style={styles.teamName} numberOfLines={1}>
-                    {partido.equipo_local}
-                  </Text>
-                  <Text style={styles.vsText}>vs</Text>
-                  <Text style={styles.teamName} numberOfLines={1}>
-                    {partido.equipo_visitante}
-                  </Text>
-                </View>
+                {grupo.partidos.map((partido) => (
+                  <TouchableOpacity
+                    key={String(partido.id_partido)}
+                    style={styles.matchCard}
+                    onPress={() => irDetallePartido(partido.id_partido)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
 
-                <Text style={styles.scoreText}>
-                  {partido.goles_local ?? '-'} - {partido.goles_visitante ?? '-'}
-                </Text>
+                    <View style={styles.teamsRow}>
+                      <Text style={styles.teamName} numberOfLines={1}>
+                        {partido.equipo_local}
+                      </Text>
+                      <Text style={styles.vsText}>vs</Text>
+                      <Text style={styles.teamName} numberOfLines={1}>
+                        {partido.equipo_visitante}
+                      </Text>
+                    </View>
 
-                <Ionicons name="chevron-forward" size={20} color="#2b5b84" />
-              </TouchableOpacity>
+                    <Text style={styles.scoreText}>
+                      {partido.goles_local ?? '-'} - {partido.goles_visitante ?? '-'}
+                    </Text>
+
+                    <Ionicons name="chevron-forward" size={20} color="#2b5b84" />
+                  </TouchableOpacity>
+                ))}
+              </View>
             ))
           )}
         </View>
       </ScrollView>
 
       <Modal
-        visible={calendarioVisible}
-        animationType="fade"
+        visible={selectorVisible}
         transparent
-        onRequestClose={() => setCalendarioVisible(false)}
+        animationType="fade"
+        onRequestClose={cerrarSelector}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.calendarModalCard}>
-            <View style={styles.calendarModalHeader}>
-              <Text style={styles.calendarModalTitle}>Selecciona una fecha</Text>
-              <TouchableOpacity
-                style={styles.closeCalendarButton}
-                onPress={() => setCalendarioVisible(false)}
-                activeOpacity={0.85}
-              >
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {tipoSelector === 'temporada' ? 'Selecciona temporada' : 'Selecciona jornada'}
+              </Text>
+              <TouchableOpacity onPress={cerrarSelector} style={styles.modalCloseButton}>
                 <Ionicons name="close" size={18} color="#1f6fa7" />
               </TouchableOpacity>
             </View>
 
-            <Calendar
-              current={fechaSeleccionada}
-              onDayPress={(day) => {
-                seleccionarFecha(day.dateString);
-                setCalendarioVisible(false);
-              }}
-              markedDates={{
-                [fechaSeleccionada]: {
-                  selected: true,
-                  selectedColor: '#1f6fa7',
-                },
-              }}
-              theme={{
-                arrowColor: '#1f6fa7',
-                todayTextColor: '#1f6fa7',
-                selectedDayBackgroundColor: '#1f6fa7',
-                textDayFontWeight: '500',
-                textMonthFontWeight: '700',
-                textDayHeaderFontWeight: '600',
-              }}
-            />
+            <ScrollView style={styles.modalOptionsList}>
+              {opcionesSelector.map((opcion) => {
+                const valor = Number(opcion);
+                const estaActiva =
+                  tipoSelector === 'temporada'
+                    ? valor === temporadaSeleccionada
+                    : valor === jornadaSeleccionada;
+
+                return (
+                  <TouchableOpacity
+                    key={String(valor)}
+                    style={[styles.modalOption, estaActiva && styles.modalOptionActive]}
+                    onPress={() => {
+                      if (tipoSelector === 'temporada') {
+                        setTemporadaSeleccionada(valor);
+                      } else {
+                        setJornadaSeleccionada(valor);
+                      }
+                      cerrarSelector();
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.modalOptionText, estaActiva && styles.modalOptionTextActive]}>
+                      {tipoSelector === 'temporada' ? valor : `Jornada ${valor}`}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -334,41 +424,8 @@ const styles = StyleSheet.create({
   screenContent: {
     paddingBottom: 26,
   },
-  dateSection: {
+  filterSection: {
     marginTop: 20,
-  },
-  dateControlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  arrowButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#e8f1f9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calendarButton: {
-    flex: 1,
-    height: 38,
-    marginHorizontal: 8,
-    backgroundColor: '#e8f1f9',
-    borderWidth: 1,
-    borderColor: '#d1e0ed',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  calendarButtonText: {
-    marginLeft: 8,
-    color: '#1f4f73',
-    fontSize: 14,
-    fontWeight: '700',
   },
   sectionTitle: {
     fontSize: 16,
@@ -377,31 +434,69 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
-  dateListContent: {
+  filterLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#52738e',
+    paddingHorizontal: 2,
+    marginBottom: 8,
+  },
+  selectorsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    marginBottom: 4,
+    gap: 12,
   },
-  datePill: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    backgroundColor: '#e8f1f9',
-    marginRight: 10,
+  selectorGroup: {
+    flexShrink: 1,
   },
-  datePillActive: {
-    backgroundColor: '#1f6fa7',
+  dropdownButton: {
+    marginBottom: 0,
+    height: 42,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#d1e0ed',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    minWidth: 116,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  dateText: {
+  dropdownButtonDisabled: {
+    opacity: 0.55,
+  },
+  dropdownButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#28506d',
   },
-  dateTextActive: {
-    color: '#ffffff',
+  filtersLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 2,
+  },
+  filtersLoadingText: {
+    marginLeft: 8,
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#59778f',
   },
   matchesSection: {
     marginTop: 10,
     paddingHorizontal: 16,
+  },
+  groupBlock: {
+    marginBottom: 10,
+  },
+  groupTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#4f6d86',
+    marginBottom: 8,
+    textTransform: 'capitalize',
   },
   matchCard: {
     backgroundColor: '#ffffff',
@@ -480,33 +575,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(13, 33, 51, 0.35)',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
   },
-  calendarModalCard: {
+  modalCard: {
     backgroundColor: '#ffffff',
     borderRadius: 14,
     borderWidth: 1,
     borderColor: '#d9e5f0',
-    padding: 12,
+    maxHeight: '70%',
   },
-  calendarModalHeader: {
+  modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
-    paddingHorizontal: 4,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
-  calendarModalTitle: {
+  modalTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#163f61',
   },
-  closeCalendarButton: {
+  modalCloseButton: {
     width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: '#e8f1f9',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  modalOptionsList: {
+    paddingHorizontal: 10,
+    paddingBottom: 12,
+  },
+  modalOption: {
+    height: 42,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    marginBottom: 8,
+    backgroundColor: '#f7fbff',
+    borderWidth: 1,
+    borderColor: '#d9e5f0',
+  },
+  modalOptionActive: {
+    backgroundColor: '#1f6fa7',
+    borderColor: '#1f6fa7',
+  },
+  modalOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#214964',
+  },
+  modalOptionTextActive: {
+    color: '#ffffff',
   },
 });

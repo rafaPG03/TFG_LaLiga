@@ -87,7 +87,21 @@ export default function PostPartidoTab({ route }) {
               />
             )}
           </Tab.Screen>
-          <Tab.Screen name="Analisis Jugador" component={AnalisisJugadorTab} />
+          <Tab.Screen name="Analisis Jugador">
+            {(props) => (
+              <AnalisisJugadorTab
+                {...props}
+                route={{
+                  ...props.route,
+                  params: {
+                    ...props.route.params,
+                    id_partido,
+                    partidoInfo,
+                  },
+                }}
+              />
+            )}
+          </Tab.Screen>
           <Tab.Screen name="Graficas" component={GraficasTab} />
         </Tab.Navigator>
       </View>

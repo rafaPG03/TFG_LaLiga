@@ -1,4 +1,4 @@
-import React, { use, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -109,7 +109,7 @@ export default function JugadoresScreen({navigation}) {
    }, []); 
 
    const irDetallesJugador = (idJugador) => {
-      navigation.navigate('DetalleJugador', { id: idJugador });
+      navigation.navigate('DetalleJugador', { id_jugador: idJugador });
    };
 
    const renderEstadoVacio = () => {

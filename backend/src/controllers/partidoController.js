@@ -1,25 +1,78 @@
 const pool = require('../config/db');
 
 const getPartidoFecha = async (req, res) => {
-      try {
-    // 1. Recibimos la fecha en formato YYYY-MM-DD
-    const fechaOriginal = req.query.fecha; // Ej: "2015-08-22"
-    
-    if (!fechaOriginal) {
-      return res.status(400).json({ error: "Debes proporcionar una fecha en formato YYYY-MM-DD" });
+  try {
+    const { fecha, temporada, jornada } = req.query;
+
+    if (temporada || jornada) {
+      if (!temporada || !jornada) {
+        return res.status(400).json({
+          error: 'Debes proporcionar temporada y jornada para este filtro',
+        });
+      }
+
+      const temporadaBusqueda = Number(temporada);
+      const jornadaBusqueda = Number(jornada);
+
+      if (!Number.isInteger(temporadaBusqueda) || !Number.isInteger(jornadaBusqueda)) {
+        return res.status(400).json({
+          error: 'La temporada y la jornada deben ser números enteros',
+        });
+      }
+
+      const queryPorJornada = `
+        SELECT
+          p.id_partido,
+          p.hora,
+          p.goles_local,
+          p.goles_visitante,
+          eL.nombre_equipo AS equipo_local,
+          eV.nombre_equipo AS equipo_visitante,
+          eL.logo AS logo_local,
+          eV.logo AS logo_visitante,
+          t.anio,
+          t.mes,
+          t.nombre_mes,
+          t.dia,
+          t.jornada,
+          TO_CHAR(MAKE_DATE(t.anio, t.mes, t.dia), 'YYYY-MM-DD') AS fecha_iso
+        FROM dim_partidos p
+        JOIN dim_equipo eL ON p.id_local = eL.id_equipo
+        JOIN dim_equipo eV ON p.id_visitante = eV.id_equipo
+        JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+        WHERE p.temporada = $1
+          AND t.jornada = $2
+        ORDER BY t.id_tiempo ASC, p.hora ASC
+      `;
+
+      const result = await pool.query(queryPorJornada, [temporadaBusqueda, jornadaBusqueda]);
+      return res.json(result.rows);
     }
 
-    // 2. Convertimos "2015-08-22" a número 20150822 para que coincida con id_tiempo
-    const idTiempoBusqueda = parseInt(fechaOriginal.replace(/-/g, ''));
+    if (!fecha) {
+      return res.status(400).json({
+        error: 'Debes proporcionar una fecha en formato YYYY-MM-DD o temporada y jornada',
+      });
+    }
 
-    // 3. Consulta con JOINs para traer nombres de equipos y datos de la jornada
-    const query = `
-      SELECT 
-        p.id_partido, p.hora, p.goles_local, p.goles_visitante,
+    const idTiempoBusqueda = parseInt(fecha.replace(/-/g, ''), 10);
+
+    const queryPorFecha = `
+      SELECT
+        p.id_partido,
+        p.hora,
+        p.goles_local,
+        p.goles_visitante,
         eL.nombre_equipo AS equipo_local,
         eV.nombre_equipo AS equipo_visitante,
         eL.logo AS logo_local,
-        eV.logo AS logo_visitante
+        eV.logo AS logo_visitante,
+        t.anio,
+        t.mes,
+        t.nombre_mes,
+        t.dia,
+        t.jornada,
+        TO_CHAR(MAKE_DATE(t.anio, t.mes, t.dia), 'YYYY-MM-DD') AS fecha_iso
       FROM dim_partidos p
       JOIN dim_equipo eL ON p.id_local = eL.id_equipo
       JOIN dim_equipo eV ON p.id_visitante = eV.id_equipo
@@ -28,12 +81,60 @@ const getPartidoFecha = async (req, res) => {
       ORDER BY p.hora ASC
     `;
 
-    const result = await pool.query(query, [idTiempoBusqueda]);
-
-    res.json(result.rows);
+    const result = await pool.query(queryPorFecha, [idTiempoBusqueda]);
+    return res.json(result.rows);
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Error al obtener partidos por fecha" });
+  }
+};
+
+const getJornadasPorTemporada = async (req, res) => {
+  const { temporada } = req.query;
+
+  if (!temporada) {
+    return res.status(400).json({
+      error: 'Debes proporcionar una temporada',
+    });
+  }
+
+  const temporadaBusqueda = Number(temporada);
+
+  if (!Number.isInteger(temporadaBusqueda)) {
+    return res.status(400).json({
+      error: 'La temporada debe ser un número entero',
+    });
+  }
+
+  try {
+    const query = `
+      SELECT DISTINCT t.jornada
+      FROM dim_partidos p
+      JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+      WHERE p.temporada = $1
+      ORDER BY t.jornada ASC
+    `;
+
+    const queryJornadaActual = `
+      SELECT MAX(t.jornada) AS jornada_actual
+      FROM dim_partidos p
+      JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+      WHERE p.temporada = $1
+        AND p.status = 'Completado'
+    `;
+
+    const [resultJornadas, resultJornadaActual] = await Promise.all([
+      pool.query(query, [temporadaBusqueda]),
+      pool.query(queryJornadaActual, [temporadaBusqueda]),
+    ]);
+
+    res.json({
+      jornadas: resultJornadas.rows,
+      jornada_actual: resultJornadaActual.rows[0]?.jornada_actual ?? null,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error al obtener jornadas por temporada' });
   }
 };
 
@@ -387,7 +488,78 @@ ORDER BY (CASE WHEN h.id_equipo = (SELECT id_local FROM dim_partidos WHERE id_pa
   } 
 };
 
+const getStatsJugadoresPartido = async (req, res) => {
+  const { id_partido } = req.params;
+  const partidoId = Number(id_partido);
+  
+  try {
+    const query = `
+    SELECT 
+    -- Información del Jugador
+    j.id_jugador,
+    j.nombre,
+    j.foto,
+    
+    -- Datos de rendimiento en el partido
+    h.id_equipo,
+    h.posicion,
+    h.minutos,
+    h.nota,
+    h.capitan,
+    h.sustituto,
+    h.goles,
+    h.asistencias,
+    h.tiros_totales,
+    h.tiros_a_puerta,
+    h.pases_totales,
+    h.pases_clave,
+    h.precision_pases,
+    h.regates_intentados,
+    h.regates,
+    h.regateado,
+    h.duelos_totales,
+    h.duelos_ganados,
+    h.faltas_cometidas,
+    h.faltas_recibidas,
+    h.entradas,
+    h.bloqueos,
+    h.intercepciones,
+    h.amarilla,
+    h.roja,
+    
+    -- Datos específicos para porteros (solo tendrán valor si posicion = 'P')
+    h.paradas,
+    h.goles_concedidos,
+    
+    -- Nombre del equipo para agrupar fácilmente
+    e.nombre_equipo
+    
+    FROM h_jugador_partido h
+    JOIN dim_jugador j ON h.id_jugador = j.id_jugador
+    JOIN dim_equipo e ON h.id_equipo = e.id_equipo
+    WHERE h.id_partido = $1  -- Aquí pasas el ID del partido
+    ORDER BY 
+    h.id_equipo,       -- Agrupamos por equipo
+    h.sustituto ASC,   -- Primero titulares (false), luego suplentes (true)
+    CASE               -- Orden por posición en el campo
+        WHEN h.posicion = 'P' THEN 1
+        WHEN h.posicion = 'DF' THEN 2
+        WHEN h.posicion = 'M' THEN 3
+        WHEN h.posicion = 'DL' THEN 4
+        ELSE 5 
+    END,
+    h.minutos DESC;    -- En suplentes, los que más jugaron primero`
+    const result = await pool.query(query, [partidoId]);
+
+    res.json(result.rows);
+  }
+    catch (err) { 
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener estadísticas de jugadores en el partido" });
+  }
+};
 
 
 
-module.exports = { getPartidoFecha, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getInfoPartido, getEventosPartido, getAlineacionesPartido, getStatsEquipoPartido };
+
+module.exports = { getPartidoFecha, getJornadasPorTemporada, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getInfoPartido, getEventosPartido, getAlineacionesPartido, getStatsEquipoPartido, getStatsJugadoresPartido };
