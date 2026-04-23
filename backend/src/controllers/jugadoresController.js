@@ -114,10 +114,92 @@ where j.id_jugador = $1`
     }
 };
 
+const getPartidosJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+    const { temporada } = req.query; // Capturamos la temporada opcional de la URL (?temporada=2024)
+
+    try {
+        let query = `
+SELECT 
+    dp.id_partido, 
+    dp.id_tiempo, 
+    dp.temporada,
+    dp.id_local, 
+    dp.id_visitante,
+    dl.nombre_equipo AS equipo_local,
+    dl.logo AS logo_local,
+    dv.nombre_equipo AS equipo_visitante,
+    dv.logo AS logo_visitante,
+    dp.goles_local, 
+    dp.goles_visitante,
+    dt.dia,
+    dt.nombre_mes,
+    dt.anio,
+    TO_CHAR(MAKE_DATE(dt.anio, dt.mes, dt.dia), 'YYYY-MM-DD') AS fecha_iso,
+    de.id_equipo as id_equipo_jugador,
+    hjp.nota, 
+    hjp.sustituto, 
+    hjp.minutos,
+    hjp.goles,           
+    hjp.asistencias,     
+    hjp.amarilla,        
+    hjp.roja             
+FROM h_jugador_partido hjp
+JOIN dim_partidos dp ON dp.id_partido = hjp.id_partido
+JOIN dim_tiempo dt ON dt.id_tiempo = dp.id_tiempo
+JOIN dim_equipo de ON hjp.id_equipo = de.id_equipo
+JOIN dim_equipo dl ON dl.id_equipo = dp.id_local
+JOIN dim_equipo dv ON dv.id_equipo = dp.id_visitante
+WHERE hjp.id_jugador = $1 AND dp.status = 'Completado'
+        `;
+
+        const queryParams = [id_jugador];
+
+        // 1. Añadimos el filtro dinámico si el usuario envía la temporada
+        if (temporada) {
+            query += ` AND dp.temporada = $2`;
+            queryParams.push(temporada);
+        }
+
+        query += ` ORDER BY dp.id_tiempo DESC`;
+
+        const result = await pool.query(query, queryParams);
+        res.json(result.rows);
+        
+    } catch (error) {
+        console.error('Error al obtener los partidos del jugador:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message
+        });
+    }
+};
+
+const getTrayectoriaJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+    try {
+        const query = `select hjt.*
+from h_jugador_temporada hjt 
+where hjt.id_jugador = $1
+order by HJT.temporada desc;
+        `;
+        const result = await pool.query(query, [id_jugador]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener la trayectoria del jugador:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message
+        });
+    }
+};
+
 
 module.exports = {
     get20JugadoresMasPartidos,
     getJugadores,
     getJugadorPorId,
-    getInfoJugador
+    getInfoJugador,
+    getPartidosJugador,
+    getTrayectoriaJugador
 };

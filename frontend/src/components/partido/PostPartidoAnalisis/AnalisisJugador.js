@@ -11,8 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const COL_JUGADOR = 170;
+const COL_JUGADOR = 150;
 const COL_BASE = 62;
+const ROW_HEIGHT = 44;
+const HEADER_HEIGHT = 40;
 
 const BASE_COLUMNS = [
     { key: 'posicion', label: 'Pos' },
@@ -242,17 +244,19 @@ export default function AnalisisJugador({ route }) {
         );
     };
 
-    const renderHeader = () => (
-        <View style={styles.headerTabla}>
-            <TouchableOpacity
-                style={[styles.headerCelda, styles.headerJugador]}
-                onPress={() => alternarOrden('nombre')}
-                activeOpacity={0.8}
-            >
-                <Text style={[styles.headerText, styles.headerJugadorText]}>Jugador</Text>
-                <Text style={styles.sortIcon}>{sortState.key === 'nombre' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}</Text>
-            </TouchableOpacity>
+    const renderHeaderJugador = () => (
+        <TouchableOpacity
+            style={[styles.headerCeldaJugador]}
+            onPress={() => alternarOrden('nombre')}
+            activeOpacity={0.8}
+        >
+            <Text style={[styles.headerText, styles.headerJugadorText]}>Jugador</Text>
+            <Text style={styles.sortIcon}>{sortState.key === 'nombre' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}</Text>
+        </TouchableOpacity>
+    );
 
+    const renderHeaderStats = () => (
+        <View style={styles.headerStatsRow}>
             {columnasVisibles.map((col) => (
                 <TouchableOpacity
                     key={col.key}
@@ -267,9 +271,8 @@ export default function AnalisisJugador({ route }) {
         </View>
     );
 
-    // Renderizado de cada fila de jugador
-    const renderFilaJugador = (jugador) => (
-        <View key={jugador.id_jugador} style={styles.filaTabla}>
+    const renderFilaJugadorFija = (jugador) => (
+        <View key={`jug-${jugador.id_jugador}`} style={styles.filaJugadorFija}>
             <View style={[styles.celdaJugador, styles.colJugador]}>
                 {jugador.foto ? (
                     <Image source={{ uri: jugador.foto }} style={styles.fotoJugador} />
@@ -282,7 +285,11 @@ export default function AnalisisJugador({ route }) {
                     {jugador.nombre || '-'}
                 </Text>
             </View>
+        </View>
+    );
 
+    const renderFilaStats = (jugador) => (
+        <View key={`stats-${jugador.id_jugador}`} style={styles.filaStats}>
             {columnasVisibles.map((col) => (
                 <Text key={`${jugador.id_jugador}-${col.key}`} style={styles.cellText} numberOfLines={1}>
                     {formatoCelda(jugador, col.key)}
@@ -295,16 +302,25 @@ export default function AnalisisJugador({ route }) {
     const renderTabla = (titulo, jugadores) => (
         <View style={styles.seccionWrap}>
             <Text style={styles.seccionTitulo}>{titulo}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.tablaWrap}>
-                    {renderHeader()}
-                    {jugadores.length > 0 ? (
-                        jugadores.map(renderFilaJugador)
-                    ) : (
-                        <Text style={styles.emptySeccion}>Sin datos en esta seccion</Text>
-                    )}
+            <View style={styles.tablaWrap}>
+                {jugadores.length > 0 ? (
+                    <View style={styles.tablaGrid}>
+                        <View style={styles.columnaJugadorFija}>
+                            {renderHeaderJugador()}
+                            {jugadores.map(renderFilaJugadorFija)}
+                        </View>
+
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                            <View style={styles.columnaStats}>
+                                {renderHeaderStats()}
+                                {jugadores.map(renderFilaStats)}
+                            </View>
+                        </ScrollView>
+                    </View>
+                ) : (
+                    <Text style={styles.emptySeccion}>Sin datos en esta seccion</Text>
+                )}
                 </View>
-            </ScrollView>
         </View>
     );
 
@@ -540,14 +556,40 @@ const styles = StyleSheet.create({
         borderColor: '#d2e0ec',
         backgroundColor: '#ffffff',
     },
-    headerTabla: {
+    tablaGrid: {
+        flexDirection: 'row',
+        alignItems: 'stretch',
+    },
+    columnaJugadorFija: {
+        width: COL_JUGADOR + 20,
+        borderRightWidth: 1,
+        borderRightColor: '#d2e0ec',
+        backgroundColor: '#ffffff',
+    },
+    columnaStats: {
+        backgroundColor: '#ffffff',
+    },
+    headerCeldaJugador: {
+        width: COL_JUGADOR + 20,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'flex-start',
+        height: HEADER_HEIGHT,
         backgroundColor: '#edf3f9',
         borderBottomWidth: 1,
         borderBottomColor: '#d2e0ec',
         paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingVertical: 0,
+    },
+    headerStatsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: HEADER_HEIGHT,
+        backgroundColor: '#edf3f9',
+        borderBottomWidth: 1,
+        borderBottomColor: '#d2e0ec',
+        paddingHorizontal: 0,
+        paddingVertical: 0,
     },
     headerCelda: {
         width: COL_BASE,
@@ -555,6 +597,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 2,
+    },
+    filaJugadorFija: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: ROW_HEIGHT,
+        paddingHorizontal: 10,
+        paddingVertical: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eef3f7',
+    },
+    filaStats: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        height: ROW_HEIGHT,
+        paddingHorizontal: 0,
+        paddingVertical: 0,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eef3f7',
     },
     headerJugador: {
         width: COL_JUGADOR,
@@ -588,22 +648,22 @@ const styles = StyleSheet.create({
         width: COL_JUGADOR,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         paddingRight: 8,
     },
     celdaJugador: {
         width: COL_JUGADOR,
     },
     fotoJugador: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         backgroundColor: '#e8edf2',
     },
     fotoFallback: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#e8edf2',
@@ -611,7 +671,7 @@ const styles = StyleSheet.create({
     nombreJugador: {
         flex: 1,
         color: '#1f3851',
-        fontSize: 13,
+        fontSize: 12,
         fontWeight: '600',
     },
     cellText: {

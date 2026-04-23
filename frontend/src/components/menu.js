@@ -11,6 +11,7 @@ import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useFavoritos } from '../context/FavoritosContext';
 
 const SESSION_KEY = '@tfg/session';
 
@@ -23,6 +24,7 @@ const MENU_OPTIONS = [
 ];
 
 export default function CustomDrawer(props) {
+	const { refreshSession } = useFavoritos();
 	const [nombreUsuario, setNombreUsuario] = useState('Usuario');
 	const [idUsuario, setIdUsuario] = useState(null);
 
@@ -62,6 +64,7 @@ const irAPantalla = (route) => {
 	const cerrarSesion = async () => {
 		try {
 			await AsyncStorage.removeItem(SESSION_KEY);
+			await refreshSession();
 
 			const parentNavigation = props.navigation.getParent();
 			if (parentNavigation) {

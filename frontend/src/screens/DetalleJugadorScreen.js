@@ -18,6 +18,7 @@ import PartidosJugTab from '../components/jugadores/PartidosJugador';
 import TrayectoriaTab from '../components/jugadores/TrayectoriaJugador';
 import StatsJugTab from '../components/jugadores/StatsJugador';
 import AtributosTab from '../components/jugadores/AtributosJugador';
+import FavoritoButton from '../components/FavoritoButton';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -109,12 +110,15 @@ export default function DetalleJugadorScreen({navigation, route}) {
                      </View>
                   </View>
 
-                  <View style={styles.logoEquipoWrap}>
-                     {jugador.logo_ultimo_equipo ? (
-                        <Image source={{ uri: jugador.logo_ultimo_equipo }} style={styles.logoEquipo} />
-                     ) : (
-                        <Ionicons name="shield-outline" size={24} color="#7a8da3" />
-                     )}
+                  <View style={styles.sideActionsWrap}>
+                     <FavoritoButton id={id_jugador} tipo="jugador" style={styles.favoritoDetalle} />
+                     <View style={styles.logoEquipoWrap}>
+                        {jugador.logo_ultimo_equipo ? (
+                           <Image source={{ uri: jugador.logo_ultimo_equipo }} style={styles.logoEquipo} />
+                        ) : (
+                           <Ionicons name="shield-outline" size={24} color="#7a8da3" />
+                        )}
+                     </View>
                   </View>
          </View>
          <Tab.Navigator
@@ -234,6 +238,15 @@ const styles = StyleSheet.create({
       fontWeight: '700',
       marginLeft: 4,
    },
+   sideActionsWrap: {
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: 90,
+      marginLeft: 8,
+   },
+   favoritoDetalle: {
+      marginBottom: 10,
+   },
    logoEquipoWrap: {
       width: 40,
       height: 40,
@@ -243,7 +256,6 @@ const styles = StyleSheet.create({
       borderColor: '#e4ebf2',
       alignItems: 'center',
       justifyContent: 'center',
-      marginLeft: 8,
    },
    logoEquipo: {
       width: 28,

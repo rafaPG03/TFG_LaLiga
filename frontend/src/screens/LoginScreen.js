@@ -14,10 +14,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFavoritos } from '../context/FavoritosContext';
 
 const SESSION_KEY = '@tfg/session';
 
 export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
+  const { refreshSession } = useFavoritos();
   // Estados para guardar lo que escribe el usuario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +42,7 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
       if (response.ok) {
         if (data?.usuario) {
           await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(data.usuario));
+          await refreshSession();
         }
 
         navigation.reset({

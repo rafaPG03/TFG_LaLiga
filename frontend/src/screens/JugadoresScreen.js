@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,24 +16,34 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
 import { FlatList} from 'react-native-gesture-handler';
+import FavoritoButton from '../components/FavoritoButton';
+import { useFavoritos } from '../context/FavoritosContext';
 
 export default function JugadoresScreen({navigation}) {
+   const { jugadoresFav } = useFavoritos();
    const [listaMasPartidos, setListaMasPartidos] = useState([]);
    const [listaJugadores, setListaJugadores] = useState([]);
-   const [jugadoresFiltrados, setJugadoresFiltrados] = useState([]);
    const [textoBusqueda, setTextoBusqueda] = useState('');
    const [yaCargadosTodos, setYaCargadosTodos] = useState(false);
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
 
+   const ordenarConFavoritosPrimero = (base) => {
+      const favSet = new Set(jugadoresFav.map((id) => Number(id)));
+
+      return [...base].sort((a, b) => {
+         const aFav = favSet.has(Number(a.id_jugador));
+         const bFav = favSet.has(Number(b.id_jugador));
+         if (aFav === bFav) {
+            return String(a.nombre).localeCompare(String(b.nombre), 'es');
+         }
+         return Number(bFav) - Number(aFav);
+      });
+   };
+
 
    const handleBusqueda = async (texto) => {
       setTextoBusqueda(texto);
-
-      if (texto.trim() === '') {
-         setJugadoresFiltrados(listaMasPartidos);
-         return;
-      }
 
       if (!yaCargadosTodos && !cargando) {
          try {
@@ -44,27 +54,25 @@ export default function JugadoresScreen({navigation}) {
             
             setListaJugadores(todos); 
             setYaCargadosTodos(true); 
-            
-            // Filtramos sobre los recién descargados
-            filtrar(texto, todos);
          } catch (e) {
             setErrorCarga("Error al buscar en la base de datos completa");
          } finally {
             setCargando(false);
          }
-      } else {
-         // Si ya los teníamos, filtramos localmente al instante
-         filtrar(texto, listaJugadores);
       }
    };
 
-   // Función auxiliar para no repetir código de filtrado
-   const filtrar = (term, base) => {
-      const res = base.filter(j => 
-         j.nombre.toLowerCase().includes(term.toLowerCase())
-      );
-      setJugadoresFiltrados(res);
-   };
+   const jugadoresFiltrados = useMemo(() => {
+      const term = textoBusqueda.trim().toLowerCase();
+
+      if (!term) {
+         return ordenarConFavoritosPrimero(listaMasPartidos);
+      }
+
+      const base = yaCargadosTodos ? listaJugadores : listaMasPartidos;
+      const filtrados = base.filter((j) => String(j.nombre).toLowerCase().includes(term));
+      return ordenarConFavoritosPrimero(filtrados);
+   }, [textoBusqueda, yaCargadosTodos, listaJugadores, listaMasPartidos, jugadoresFav]);
    
    useEffect(() => {
       let pantallaActiva = true;
@@ -87,7 +95,6 @@ export default function JugadoresScreen({navigation}) {
                   const jugadoresArray = Array.isArray(data) ? data : [];
                   
                   setListaMasPartidos(jugadoresArray);
-                  setJugadoresFiltrados(jugadoresArray);
                }
          } catch (error) {
                if (pantallaActiva) {
@@ -169,6 +176,11 @@ export default function JugadoresScreen({navigation}) {
                   onPress={() => irDetallesJugador(item.id_jugador)}
                   activeOpacity={0.85}
                >
+                  <FavoritoButton
+                     id={item.id_jugador}
+                     tipo="jugador"
+                     style={styles.favoritoFloat}
+                  />
                   <View style={styles.logoContainer}>
                   <Image
                      source={item.foto ? { uri: item.foto } : require('../assets/player_default.png')}
@@ -231,7 +243,14 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.08,
       shadowRadius: 4,
       elevation: 2,
+         position: 'relative',
    },
+      favoritoFloat: {
+         position: 'absolute',
+         right: 8,
+         top: 8,
+         zIndex: 10,
+      },
    logoContainer: {
       flex: 1,
       width: '100%',

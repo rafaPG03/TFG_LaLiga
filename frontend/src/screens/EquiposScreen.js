@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -14,28 +14,38 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
 import { TextInput } from 'react-native-gesture-handler';
+import FavoritoButton from '../components/FavoritoButton';
+import { useFavoritos } from '../context/FavoritosContext';
 
 export default function EquiposScreen({ navigation }) {
+   const { equiposFav } = useFavoritos();
    const [listaEquipos, setListaEquipos] = useState([]);
-   const [equiposFiltrados, setEquiposFiltrados] = useState([]);
    const [textoBusqueda, setTextoBusqueda] = useState('');
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
 
    const handleBusqueda = (texto) => {
-      setTextoBusqueda(texto); // Actualizamos el input
-
-      if (texto.trim() === '') {
-         // Si el buscador está vacío, mostramos todos de nuevo
-         setEquiposFiltrados(listaEquipos);
-      } else {
-         // Filtramos ignorando mayúsculas/minúsculas
-         const filtrados = listaEquipos.filter((equipo) =>
-            equipo.nombre_equipo.toLowerCase().includes(texto.toLowerCase())
-         );
-         setEquiposFiltrados(filtrados);
-      }
+      setTextoBusqueda(texto);
    };
+
+   const equiposFiltrados = useMemo(() => {
+      const base = textoBusqueda.trim()
+         ? listaEquipos.filter((equipo) =>
+              equipo.nombre_equipo.toLowerCase().includes(textoBusqueda.toLowerCase())
+           )
+         : listaEquipos;
+
+      const favSet = new Set(equiposFav.map((id) => Number(id)));
+
+      return [...base].sort((a, b) => {
+         const aFav = favSet.has(Number(a.id_equipo));
+         const bFav = favSet.has(Number(b.id_equipo));
+         if (aFav === bFav) {
+            return String(a.nombre_equipo).localeCompare(String(b.nombre_equipo), 'es');
+         }
+         return Number(bFav) - Number(aFav);
+      });
+   }, [listaEquipos, textoBusqueda, equiposFav]);
 
    useEffect(() => {
       let pantallaActiva = true;
@@ -56,7 +66,6 @@ export default function EquiposScreen({ navigation }) {
             if (pantallaActiva) {
                const equiposArray = Array.isArray(data) ? data : [];
                setListaEquipos(equiposArray);
-               setEquiposFiltrados(equiposArray);
             } else {
                setListaEquipos([]);
             }
@@ -138,6 +147,11 @@ export default function EquiposScreen({ navigation }) {
                   onPress={() => irDetalleEquipo(item.id_equipo)}
                   activeOpacity={0.85}
                >
+                  <FavoritoButton
+                     id={item.id_equipo}
+                     tipo="equipo"
+                     style={styles.favoritoFloat}
+                  />
                   <View style={styles.logoContainer}>
                      <Image
                         source={{ uri: item.logo }}
@@ -200,6 +214,13 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.08,
       shadowRadius: 4,
       elevation: 2,
+      position: 'relative',
+   },
+   favoritoFloat: {
+      position: 'absolute',
+      right: 8,
+      top: 8,
+      zIndex: 10,
    },
    logoContainer: {
       flex: 1,

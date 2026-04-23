@@ -20,6 +20,7 @@ import DetalleJugadorScreen from './src/screens/DetalleJugadorScreen';
 import DetallePartidoScreen from './src/screens/DetallePartidoScreen';
 import PerfilScreen from './src/screens/PerfilScreen';
 import CustomDrawer from './src/components/menu';
+import { FavoritosProvider } from './src/context/FavoritosContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -76,21 +77,23 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName={haySesion ? 'MainApp' : 'Login'}
-          screenOptions={{ headerShown: false }}
-        >
-          
-          {/* Pantallas de acceso (Sin Menú Lateral) */}
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Registro" component={RegistroScreen} />
+      <FavoritosProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName={haySesion ? 'MainApp' : 'Login'}
+            screenOptions={{ headerShown: false }}
+          >
+            
+            {/* Pantallas de acceso (Sin Menú Lateral) */}
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Registro" component={RegistroScreen} />
 
-          {/* Pantalla Principal (QUE CONTIENE EL DRAWER) */}
-          <Stack.Screen name="MainApp" component={DrawerNavigator} />
-          
-        </Stack.Navigator>
-      </NavigationContainer>
+            {/* Pantalla Principal (QUE CONTIENE EL DRAWER) */}
+            <Stack.Screen name="MainApp" component={DrawerNavigator} />
+            
+          </Stack.Navigator>
+        </NavigationContainer>
+      </FavoritosProvider>
     </GestureHandlerRootView>
   );
 }

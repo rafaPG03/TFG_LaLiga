@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
+import { useFavoritos } from '../context/FavoritosContext';
 
 const formatearHora = (hora) => {
   if (!hora || typeof hora !== 'string') {
@@ -54,7 +55,25 @@ const formatearFechaCabecera = (fechaISO) => {
   }).format(fecha);
 };
 
+const formatearFechaPartido = (partido) => {
+  if (partido.dia && partido.nombre_mes) {
+    return `${partido.dia} ${partido.nombre_mes}`;
+  }
+
+  const fechaISO = construirFechaISO(partido);
+  if (!fechaISO || fechaISO === 'Sin fecha') {
+    return 'Fecha sin información';
+  }
+
+  return fechaISO;
+};
+
+const esPartidoFavorito = (partido, favSet) => {
+  return favSet.has(Number(partido.id_local)) || favSet.has(Number(partido.id_visitante));
+};
+
 export default function InicioScreen({ navigation }) {
+  const { equiposFav } = useFavoritos();
   const [temporadas, setTemporadas] = useState([]);
   const [jornadas, setJornadas] = useState([]);
   const [temporadaSeleccionada, setTemporadaSeleccionada] = useState(null);
@@ -221,10 +240,17 @@ export default function InicioScreen({ navigation }) {
     };
   }, [temporadaSeleccionada, jornadaSeleccionada]);
 
-  const partidosAgrupados = useMemo(() => {
+  const { favoritos, otrosAgrupados } = useMemo(() => {
+    const favSet = new Set(equiposFav.map((id) => Number(id)));
     const grupos = new Map();
+    const partidosFavoritos = [];
 
     partidosDelDia.forEach((partido) => {
+      if (esPartidoFavorito(partido, favSet)) {
+        partidosFavoritos.push(partido);
+        return;
+      }
+
       const fechaISO = construirFechaISO(partido);
 
       if (!grupos.has(fechaISO)) {
@@ -234,11 +260,44 @@ export default function InicioScreen({ navigation }) {
       grupos.get(fechaISO).push(partido);
     });
 
-    return Array.from(grupos.entries()).map(([fechaISO, partidos]) => ({
-      fechaISO,
-      partidos,
-    }));
-  }, [partidosDelDia]);
+    return {
+      favoritos: partidosFavoritos,
+      otrosAgrupados: Array.from(grupos.entries()).map(([fechaISO, partidos]) => ({
+        fechaISO,
+        partidos,
+      })),
+    };
+  }, [partidosDelDia, equiposFav]);
+
+  const renderPartidoCard = (partido) => (
+    <TouchableOpacity
+      key={String(partido.id_partido)}
+      style={styles.matchCard}
+      onPress={() => irDetallePartido(partido.id_partido)}
+      activeOpacity={0.85}
+    >
+      <View style={styles.timeBlock}>
+        <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
+        <Text style={styles.matchDate}>{formatearFechaPartido(partido)}</Text>
+      </View>
+
+      <View style={styles.teamsRow}>
+        <Text style={styles.teamName} numberOfLines={1}>
+          {partido.equipo_local}
+        </Text>
+        <Text style={styles.vsText}>vs</Text>
+        <Text style={styles.teamName} numberOfLines={1}>
+          {partido.equipo_visitante}
+        </Text>
+      </View>
+
+      <Text style={styles.scoreText}>
+        {partido.goles_local ?? '-'} - {partido.goles_visitante ?? '-'}
+      </Text>
+
+      <Ionicons name="chevron-forward" size={20} color="#2b5b84" />
+    </TouchableOpacity>
+  );
 
   const irDetallePartido = (id_partido) => {
     navigation.navigate('DetallePartido', { id_partido });
@@ -327,38 +386,24 @@ export default function InicioScreen({ navigation }) {
               <Text style={styles.emptyStateText}>No hay partidos para esta jornada</Text>
             </View>
           ) : (
-            partidosAgrupados.map((grupo) => (
-              <View key={grupo.fechaISO} style={styles.groupBlock}>
-                <Text style={styles.groupTitle}>{formatearFechaCabecera(grupo.fechaISO)}</Text>
+            <>
+              {favoritos.length > 0 ? (
+                <View style={styles.groupBlock}>
+                  <Text style={styles.groupTitleFav}>Favoritos</Text>
+                  {favoritos.map(renderPartidoCard)}
+                </View>
+              ) : null}
 
-                {grupo.partidos.map((partido) => (
-                  <TouchableOpacity
-                    key={String(partido.id_partido)}
-                    style={styles.matchCard}
-                    onPress={() => irDetallePartido(partido.id_partido)}
-                    activeOpacity={0.85}
-                  >
-                    <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
-
-                    <View style={styles.teamsRow}>
-                      <Text style={styles.teamName} numberOfLines={1}>
-                        {partido.equipo_local}
-                      </Text>
-                      <Text style={styles.vsText}>vs</Text>
-                      <Text style={styles.teamName} numberOfLines={1}>
-                        {partido.equipo_visitante}
-                      </Text>
-                    </View>
-
-                    <Text style={styles.scoreText}>
-                      {partido.goles_local ?? '-'} - {partido.goles_visitante ?? '-'}
-                    </Text>
-
-                    <Ionicons name="chevron-forward" size={20} color="#2b5b84" />
-                  </TouchableOpacity>
+              <View style={styles.groupBlock}>
+                {favoritos.length > 0 ? <View style={styles.separatorLine} /> : null}
+                {otrosAgrupados.map((grupo) => (
+                  <View key={grupo.fechaISO} style={styles.dateGroupBlock}>
+                    <Text style={styles.dateGroupTitle}>{formatearFechaCabecera(grupo.fechaISO)}</Text>
+                    {grupo.partidos.map(renderPartidoCard)}
+                  </View>
                 ))}
               </View>
-            ))
+            </>
           )}
         </View>
       </ScrollView>
@@ -492,6 +537,31 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   groupTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#4f6d86',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  groupTitleFav: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#1b547e',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  separatorLine: {
+    height: 1,
+    backgroundColor: '#d7e4f0',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+  dateGroupBlock: {
+    marginBottom: 4,
+  },
+  dateGroupTitle: {
     fontSize: 13,
     fontWeight: '700',
     color: '#4f6d86',
@@ -514,6 +584,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: '#1f6fa7',
+  },
+  timeBlock: {
+    width: 82,
+    alignItems: 'flex-start',
+  },
+  matchDate: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#6f879d',
   },
   teamsRow: {
     flex: 1,

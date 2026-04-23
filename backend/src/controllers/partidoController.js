@@ -23,6 +23,8 @@ const getPartidoFecha = async (req, res) => {
       const queryPorJornada = `
         SELECT
           p.id_partido,
+          p.id_local,
+          p.id_visitante,
           p.hora,
           p.goles_local,
           p.goles_visitante,
@@ -60,6 +62,8 @@ const getPartidoFecha = async (req, res) => {
     const queryPorFecha = `
       SELECT
         p.id_partido,
+        p.id_local,
+        p.id_visitante,
         p.hora,
         p.goles_local,
         p.goles_visitante,
@@ -145,7 +149,7 @@ const getPartidosEntreEquipos = async (req, res) => {
   try {
     let query = `
       SELECT 
-          p.id_partido, p.goles_local, p.goles_visitante, p.temporada, p.ganador, 
+          p.id_partido, p.id_local, p.id_visitante, p.goles_local, p.goles_visitante, p.temporada, p.ganador, 
           el.nombre_equipo AS equipo_local, ev.nombre_equipo AS equipo_visitante,
           el.logo AS logo_local, ev.logo AS logo_visitante,
           t.anio, t.nombre_mes, t.dia, t.jornada, t.id_tiempo
