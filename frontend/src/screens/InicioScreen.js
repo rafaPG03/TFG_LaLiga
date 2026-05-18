@@ -10,6 +10,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
@@ -269,35 +270,80 @@ export default function InicioScreen({ navigation }) {
     };
   }, [partidosDelDia, equiposFav]);
 
-  const renderPartidoCard = (partido) => (
-    <TouchableOpacity
-      key={String(partido.id_partido)}
-      style={styles.matchCard}
-      onPress={() => irDetallePartido(partido.id_partido)}
-      activeOpacity={0.85}
-    >
-      <View style={styles.timeBlock}>
-        <Text style={styles.matchTime}>{formatearHora(partido.hora)}</Text>
-        <Text style={styles.matchDate}>{formatearFechaPartido(partido)}</Text>
-      </View>
+  const renderPartidoCard = (partido) => {
+    const logoLocal = partido.logo_local;
+    const logoVisitante = partido.logo_visitante;
+    const nombreLocal = partido.equipo_local;
+    const nombreVisitante = partido.equipo_visitante;
+    const golesLocal = partido.goles_local;
+    const golesVisitante = partido.goles_visitante;
+    const tieneMarcador = partido.goles_local != null && partido.goles_visitante != null;
+    const estaCompletado = partido.status === 'Completado' || tieneMarcador;
+    const fechaFormato = `${String(partido.dia || 0).padStart(2, '0')}/${String(partido.mes || 0).padStart(2, '0')}/${partido.anio || ''}`;
 
-      <View style={styles.teamsRow}>
-        <Text style={styles.teamName} numberOfLines={1}>
-          {partido.equipo_local}
-        </Text>
-        <Text style={styles.vsText}>vs</Text>
-        <Text style={styles.teamName} numberOfLines={1}>
-          {partido.equipo_visitante}
-        </Text>
-      </View>
+    return (
+      <TouchableOpacity
+        key={String(partido.id_partido)}
+        style={styles.tarjetaPartido}
+        onPress={() => irDetallePartido(partido.id_partido)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.columnaContenido}>
+          <View style={styles.cabeceraCentro}>
+            <Text style={styles.jornadaTexto}>Jornada {partido.jornada ?? '-'}</Text>
+          </View>
 
-      <Text style={styles.scoreText}>
-        {partido.goles_local ?? '-'} - {partido.goles_visitante ?? '-'}
-      </Text>
+          <View style={styles.filaEquipos}>
+            <View style={styles.equipoBloque}>
+              <View style={styles.equipoFila}>
+                {logoLocal ? (
+                  <Image source={{ uri: logoLocal }} style={styles.logoEquipo} />
+                ) : (
+                  <View style={styles.logoFallback}>
+                    <Ionicons name="shield-outline" size={14} color="#5f7f9b" />
+                  </View>
+                )}
+                <Text style={styles.equipoNombre} numberOfLines={1}>
+                  {nombreLocal || '-'}
+                </Text>
+              </View>
+            </View>
 
-      <Ionicons name="chevron-forward" size={20} color="#2b5b84" />
-    </TouchableOpacity>
-  );
+            <View style={styles.marcadorBloque}>
+              {estaCompletado ? (
+                <>
+                  <Text style={styles.marcadorTexto}>{golesLocal ?? '-'}</Text>
+                  <Text style={styles.separadorMarcador}>-</Text>
+                  <Text style={styles.marcadorTexto}>{golesVisitante ?? '-'}</Text>
+                </>
+              ) : (
+                <Text style={styles.horaTexto}>{formatearHora(partido.hora)}</Text>
+              )}
+            </View>
+
+            <View style={[styles.equipoBloque, styles.equipoBloqueDerecha]}>
+              <View style={styles.equipoFilaDerecha}>
+                <Text style={styles.equipoNombreDerecha} numberOfLines={1}>
+                  {nombreVisitante || '-'}
+                </Text>
+                {logoVisitante ? (
+                  <Image source={{ uri: logoVisitante }} style={styles.logoEquipo} />
+                ) : (
+                  <View style={styles.logoFallback}>
+                    <Ionicons name="shield-outline" size={14} color="#5f7f9b" />
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.piePartido}>
+            <Text style={styles.fechaTexto}>{fechaFormato}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const irDetallePartido = (id_partido) => {
     navigation.navigate('DetallePartido', { id_partido });
@@ -568,50 +614,125 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'capitalize',
   },
-  matchCard: {
+  tarjetaPartido: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
     backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#d9e5f0',
+    borderColor: '#dbe6f0',
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  columnaContenido: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    justifyContent: 'flex-start',
+  },
+  cabeceraCentro: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  filaEquipos: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-  },
-  matchTime: {
-    width: 56,
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1f6fa7',
-  },
-  timeBlock: {
-    width: 82,
-    alignItems: 'flex-start',
-  },
-  matchDate: {
+    gap: 6,
     marginTop: 2,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#6f879d',
   },
-  teamsRow: {
+  equipoBloque: {
     flex: 1,
+    alignItems: 'flex-start',
+    gap: 2,
+  },
+  equipoBloqueDerecha: {
+    alignItems: 'flex-end',
+  },
+  equipoFila: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 12,
+    gap: 4,
   },
-  teamName: {
+  equipoFilaDerecha: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+  },
+  logoEquipo: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    resizeMode: 'contain',
+    backgroundColor: '#f0f5fa',
+  },
+  logoFallback: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#e8edf2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  equipoNombre: {
     flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1d3850',
-  },
-  vsText: {
-    marginHorizontal: 8,
-    fontSize: 13,
+    color: '#173a5d',
+    fontSize: 12,
     fontWeight: '700',
-    color: '#7894ac',
+  },
+  equipoNombreDerecha: {
+    flex: 1,
+    color: '#173a5d',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  marcadorBloque: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    minWidth: 52,
+  },
+  marcadorTexto: {
+    fontSize: 16,
+    color: '#0f2743',
+    fontWeight: '800',
+    minWidth: 16,
+    textAlign: 'center',
+  },
+  separadorMarcador: {
+    fontSize: 14,
+    color: '#6c8299',
+    fontWeight: '800',
+  },
+  piePartido: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  fechaTexto: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#123455',
+    textAlign: 'center',
+  },
+  jornadaTexto: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#32506f',
+    backgroundColor: '#edf3f9',
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  horaTexto: {
+    fontSize: 10,
+    color: '#6c8299',
+    fontWeight: '600',
   },
   emptyState: {
     backgroundColor: '#ffffff',
@@ -642,14 +763,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#59778f',
     fontWeight: '500',
-  },
-  scoreText: {
-    width: 38,
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#103a5d',
-    marginRight: 4,
   },
   modalOverlay: {
     flex: 1,

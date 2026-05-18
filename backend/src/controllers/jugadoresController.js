@@ -178,7 +178,7 @@ WHERE hjp.id_jugador = $1 AND dp.status = 'Completado'
 const getTrayectoriaJugador = async (req, res) => {
     const { id_jugador } = req.params;
     try {
-        const query = `select hjt.*
+        const query = `select hjt.id_jugador, hjt.id_equipo, hjt.temporada, hjt.partidos, hjt.nota_media, hjt.goles , hjt.asistencias, hjt.amarillas, hjt.rojas , hjt.goles_concedidos 
 from h_jugador_temporada hjt 
 where hjt.id_jugador = $1
 order by HJT.temporada desc;
@@ -194,6 +194,280 @@ order by HJT.temporada desc;
     }
 };
 
+const getRatingsJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+    const { temporada } = req.query; // Capturamos la temporada opcional de la URL (?temporada=2024)
+
+    try {
+        let temporadaSeleccionada = temporada;
+
+        if (!temporadaSeleccionada) {
+            const temporadaResult = await pool.query(
+                `SELECT MAX(temporada) AS temporada
+                 FROM h_jugadores_ratings
+                 WHERE id_jugador = $1`,
+                [id_jugador]
+            );
+
+            temporadaSeleccionada = temporadaResult.rows[0]?.temporada || null;
+
+            if (!temporadaSeleccionada) {
+                return res.json([]);
+            }
+        }
+
+        const query = `
+            SELECT *
+            FROM h_jugadores_ratings
+            WHERE id_jugador = $1 AND temporada = $2
+        `;
+        const result = await pool.query(query, [id_jugador, temporadaSeleccionada]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener los ratings del jugador:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message
+        });
+    }
+};
+
+const getActualidadJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+
+    try {
+        const ultimosPartidosQuery = `
+            SELECT
+                dp.id_partido,
+                dp.id_tiempo,
+                dp.temporada,
+                dp.id_local,
+                dp.id_visitante,
+                dp.hora,
+                dp.status,
+                dl.nombre_equipo AS equipo_local,
+                dl.logo AS logo_local,
+                dv.nombre_equipo AS equipo_visitante,
+                dv.logo AS logo_visitante,
+                dp.goles_local,
+                dp.goles_visitante,
+                dt.dia,
+                dt.nombre_mes,
+                dt.anio,
+                TO_CHAR(MAKE_DATE(dt.anio, dt.mes, dt.dia), 'YYYY-MM-DD') AS fecha_iso,
+                hjp.id_equipo AS id_equipo_jugador,
+                hjp.nota,
+                hjp.minutos
+            FROM h_jugador_partido hjp
+            JOIN dim_partidos dp ON dp.id_partido = hjp.id_partido
+            JOIN dim_tiempo dt ON dt.id_tiempo = dp.id_tiempo
+            JOIN dim_equipo dl ON dl.id_equipo = dp.id_local
+            JOIN dim_equipo dv ON dv.id_equipo = dp.id_visitante
+            WHERE hjp.id_jugador = $1
+              AND dp.status = 'Completado'
+              AND hjp.minutos > 1
+            ORDER BY dp.id_tiempo DESC, dp.hora DESC
+            LIMIT 5
+        `;
+
+        const equipoActualQuery = `
+            SELECT hjp.id_equipo
+            FROM h_jugador_partido hjp
+            JOIN dim_partidos dp ON dp.id_partido = hjp.id_partido
+            WHERE hjp.id_jugador = $1
+            ORDER BY dp.id_tiempo DESC, dp.hora DESC
+            LIMIT 1
+        `;
+
+        const ultimosPartidosResult = await pool.query(ultimosPartidosQuery, [id_jugador]);
+        const equipoActualResult = await pool.query(equipoActualQuery, [id_jugador]);
+
+        const idEquipoActual = equipoActualResult.rows[0]?.id_equipo || null;
+
+        let proximoPartido = null;
+        if (idEquipoActual) {
+            const proximoPartidoQuery = `
+                SELECT
+                    dp.id_partido,
+                    dp.id_tiempo,
+                    dp.temporada,
+                    dp.id_local,
+                    dp.id_visitante,
+                    dp.hora,
+                    dp.status,
+                    dl.nombre_equipo AS equipo_local,
+                    dl.logo AS logo_local,
+                    dv.nombre_equipo AS equipo_visitante,
+                    dv.logo AS logo_visitante,
+                    dt.dia,
+                    dt.nombre_mes,
+                    dt.anio,
+                    TO_CHAR(MAKE_DATE(dt.anio, dt.mes, dt.dia), 'YYYY-MM-DD') AS fecha_iso
+                FROM dim_partidos dp
+                JOIN dim_tiempo dt ON dt.id_tiempo = dp.id_tiempo
+                JOIN dim_equipo dl ON dl.id_equipo = dp.id_local
+                JOIN dim_equipo dv ON dv.id_equipo = dp.id_visitante
+                WHERE dp.status <> 'Completado'
+                  AND MAKE_DATE(dt.anio, dt.mes, dt.dia) >= CURRENT_DATE
+                  AND (dp.id_local = $1 OR dp.id_visitante = $1)
+                ORDER BY dt.anio ASC, dt.mes ASC, dt.dia ASC, dp.hora ASC
+                LIMIT 1
+            `;
+
+            const proximoPartidoResult = await pool.query(proximoPartidoQuery, [idEquipoActual]);
+            proximoPartido = proximoPartidoResult.rows[0] || null;
+        }
+
+        res.json({
+            id_equipo_actual: idEquipoActual,
+            ultimos_partidos: ultimosPartidosResult.rows,
+            proximo_partido: proximoPartido,
+        });
+    } catch (error) {
+        console.error('Error al obtener la actualidad del jugador:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message,
+        });
+    }
+};
+
+const getRendimientoActualJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+
+    try {
+        const query = `
+            SELECT *
+            FROM h_jugador_temporada
+            WHERE id_jugador = $1
+            ORDER BY temporada DESC
+            LIMIT 1
+        `;
+
+        const result = await pool.query(query, [id_jugador]);
+        res.json(result.rows[0] || null);
+    } catch (error) {
+        console.error('Error al obtener el rendimiento actual:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message,
+        });
+    }
+};
+
+const getTrayectoriaPorEquipo = async (req, res) => {
+    const { id_jugador } = req.params;
+
+    try {
+        const query = `
+            SELECT
+                hjt.id_equipo,
+                e.nombre_equipo,
+                e.logo,
+                COALESCE(SUM(hjt.partidos), 0) AS partidos,
+                COALESCE(SUM(hjt.goles), 0) AS goles,
+                ROUND(AVG(hjt.nota_media)::numeric, 2) AS rating,
+                COUNT(DISTINCT hjt.temporada) AS temporadas
+            FROM h_jugador_temporada hjt
+            LEFT JOIN dim_equipo e ON e.id_equipo = hjt.id_equipo
+            WHERE hjt.id_jugador = $1
+            GROUP BY hjt.id_equipo, e.nombre_equipo, e.logo
+        `;
+
+        const result = await pool.query(query, [id_jugador]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener la trayectoria por equipo:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message,
+        });
+    }
+};
+
+const getMejoresPartidosJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+
+    try {
+        const query = `
+            SELECT
+                dp.id_partido,
+                dp.id_tiempo,
+                dp.temporada,
+                dp.id_local,
+                dp.id_visitante,
+                dl.nombre_equipo AS equipo_local,
+                dl.logo AS logo_local,
+                dv.nombre_equipo AS equipo_visitante,
+                dv.logo AS logo_visitante,
+                dp.goles_local,
+                dp.goles_visitante,
+                dt.dia,
+                dt.nombre_mes,
+                dt.anio,
+                TO_CHAR(MAKE_DATE(dt.anio, dt.mes, dt.dia), 'YYYY-MM-DD') AS fecha_iso,
+                hjp.id_equipo AS id_equipo_jugador,
+                hjp.nota,
+                hjp.minutos
+            FROM h_jugador_partido hjp
+            JOIN dim_partidos dp ON dp.id_partido = hjp.id_partido
+            JOIN dim_tiempo dt ON dt.id_tiempo = dp.id_tiempo
+            JOIN dim_equipo dl ON dl.id_equipo = dp.id_local
+            JOIN dim_equipo dv ON dv.id_equipo = dp.id_visitante
+            WHERE hjp.id_jugador = $1
+              AND dp.status = 'Completado'
+              AND hjp.minutos > 1
+            ORDER BY hjp.nota DESC NULLS LAST, dp.id_tiempo DESC, dp.hora DESC
+            LIMIT 5
+        `;
+
+        const result = await pool.query(query, [id_jugador]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener los mejores partidos:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message,
+        });
+    }
+};
+
+const getMejoresCompanerosJugador = async (req, res) => {
+    const { id_jugador } = req.params;
+
+    try {
+        const query = `
+            SELECT
+                j2.id_jugador,
+                j2.nombre,
+                j2.foto,
+                COUNT(*) AS partidos_juntos
+            FROM h_jugador_partido hjp
+            JOIN h_jugador_partido hjp2
+              ON hjp.id_partido = hjp2.id_partido
+             AND hjp.id_equipo = hjp2.id_equipo
+             AND hjp2.id_jugador <> hjp.id_jugador
+            JOIN dim_partidos dp ON dp.id_partido = hjp.id_partido
+            JOIN dim_jugador j2 ON j2.id_jugador = hjp2.id_jugador
+            WHERE hjp.id_jugador = $1
+              AND dp.status = 'Completado'
+              AND hjp.minutos > 1
+              AND hjp2.minutos > 1
+            GROUP BY j2.id_jugador, j2.nombre, j2.foto
+            ORDER BY partidos_juntos DESC
+            LIMIT 15
+        `;
+
+        const result = await pool.query(query, [id_jugador]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener los mejores companeros:', error);
+        res.status(500).json({
+            error: 'Error interno del servidor',
+            message: error.message,
+        });
+    }
+};
 
 module.exports = {
     get20JugadoresMasPartidos,
@@ -201,5 +475,11 @@ module.exports = {
     getJugadorPorId,
     getInfoJugador,
     getPartidosJugador,
-    getTrayectoriaJugador
+    getTrayectoriaJugador,
+    getRatingsJugador,
+    getActualidadJugador,
+    getRendimientoActualJugador,
+    getTrayectoriaPorEquipo,
+    getMejoresPartidosJugador,
+    getMejoresCompanerosJugador
 };

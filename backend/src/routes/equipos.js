@@ -3,7 +3,10 @@ const router = express.Router();
 const equipoController = require('../controllers/equipoController');
 
 router.get('/analisis/stats/:id_equipo', equipoController.getStatsEquipoPorId);
-
+router.get('/info/:id_equipo', equipoController.getInfoEquipo);
+router.get('/plantilla/:id_equipo', equipoController.getPlantillaEquipoPorTemporada);
+router.get('/partidos/:id_equipo', equipoController.getPartidosEquipoPorId);
+router.get('/trayectoria/:id_equipo', equipoController.getTrayectoriaEquipoPorTemporada);
 // Rutas normales
 router.get('/:id', equipoController.getEquipoPorId);
 router.get('/', equipoController.getEquipos);
