@@ -3,6 +3,7 @@ const router = express.Router();
 const equipoController = require('../controllers/equipoController');
 
 router.get('/analisis/stats/:id_equipo', equipoController.getStatsEquipoPorId);
+router.get('/dashboard/:id_equipo', equipoController.getDashboardEquipo);
 router.get('/info/:id_equipo', equipoController.getInfoEquipo);
 router.get('/plantilla/:id_equipo', equipoController.getPlantillaEquipoPorTemporada);
 router.get('/partidos/:id_equipo', equipoController.getPartidosEquipoPorId);

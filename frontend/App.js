@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -18,13 +18,45 @@ import AjustesScreen from './src/screens/AjustesScreen';
 import DetalleEquipoScreen from './src/screens/DetalleEquipoScreen';
 import DetalleJugadorScreen from './src/screens/DetalleJugadorScreen';  
 import DetallePartidoScreen from './src/screens/DetallePartidoScreen';
+import DetalleTemporadaScreen from './src/screens/DetalleTemporadaScreen';
 import PerfilScreen from './src/screens/PerfilScreen';
+import EditPerfilScreen from './src/screens/EditPerfilScreen';
 import CustomDrawer from './src/components/menu';
+import AgenteDeOro from './src/components/agente/AgenteDeOro';
 import { FavoritosProvider } from './src/context/FavoritosContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 const SESSION_KEY = '@tfg/session';
+const AGENTE_ROUTES_PERMITIDAS = new Set([
+  'Inicio',
+  'Temporadas',
+  'DetalleTemporada',
+  'Equipos',
+  'DetalleEquipo',
+  'Jugadores',
+  'DetalleJugador',
+  'Partidos',
+  'DetallePartido',
+]);
+
+const obtenerRutaActiva = (state) => {
+  if (!state || !state.routes || state.index == null) {
+    return null;
+  }
+
+  const route = state.routes[state.index];
+
+  if (!route) {
+    return null;
+  }
+
+  if (route.state) {
+    return obtenerRutaActiva(route.state);
+  }
+
+  return route.name;
+};
 
 // 1. Definimos el Menú Lateral primero
 function DrawerNavigator() {
@@ -35,6 +67,7 @@ function DrawerNavigator() {
     >
       <Drawer.Screen name="Inicio" component={InicioScreen} />
       <Drawer.Screen name="Temporadas" component={TemporadaScreen} />
+      <Drawer.Screen name="DetalleTemporada" component={DetalleTemporadaScreen} />
       <Drawer.Screen name="Equipos" component={EquiposScreen} />
       <Drawer.Screen name="DetalleEquipo" component={DetalleEquipoScreen} />
       <Drawer.Screen name="Jugadores" component={JugadoresScreen} />
@@ -43,6 +76,7 @@ function DrawerNavigator() {
       <Drawer.Screen name="DetallePartido" component={DetallePartidoScreen} />
       <Drawer.Screen name="Ajustes" component={AjustesScreen} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} />
+      <Drawer.Screen name="EditPerfil" component={EditPerfilScreen} />
     </Drawer.Navigator>
   );
 }
@@ -51,6 +85,8 @@ function DrawerNavigator() {
 export default function App() {
   const [cargandoSesion, setCargandoSesion] = useState(true);
   const [haySesion, setHaySesion] = useState(false);
+  const navigationRef = useRef(null);
+  const [rutaActiva, setRutaActiva] = useState(null);
 
   useEffect(() => {
     const restaurarSesion = async () => {
@@ -75,10 +111,20 @@ export default function App() {
     );
   }
 
+  const agenteVisible = AGENTE_ROUTES_PERMITIDAS.has(rutaActiva);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <FavoritosProvider>
-        <NavigationContainer>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={() => {
+            setRutaActiva(obtenerRutaActiva(navigationRef.current?.getRootState()));
+          }}
+          onStateChange={() => {
+            setRutaActiva(obtenerRutaActiva(navigationRef.current?.getRootState()));
+          }}
+        >
           <Stack.Navigator
             initialRouteName={haySesion ? 'MainApp' : 'Login'}
             screenOptions={{ headerShown: false }}
@@ -92,6 +138,7 @@ export default function App() {
             <Stack.Screen name="MainApp" component={DrawerNavigator} />
             
           </Stack.Navigator>
+          <AgenteDeOro visible={agenteVisible} />
         </NavigationContainer>
       </FavoritosProvider>
     </GestureHandlerRootView>

@@ -69,6 +69,11 @@ export default function PreviaTab({ route, navigation }) {
       return Number.isFinite(rating) ? rating.toFixed(2) : '-';
     }
 
+    if (jugador.categoria === 'Minutos') {
+      const minutos = Number(jugador.valor);
+      return Number.isFinite(minutos) ? `${Math.round(minutos)} min` : '-';
+    }
+
     return jugador.valor ?? '-';
   };
 
@@ -94,7 +99,7 @@ export default function PreviaTab({ route, navigation }) {
   };
 
   const filasDestacados = [
-    { key: 'partidos', label: 'Mas Partidos', categoria: 'Partidos' },
+    { key: 'minutos', label: 'Mas Minutos', categoria: 'Minutos' },
     { key: 'golesAsistencias', label: 'Mas G + A', categoria: 'G+A' },
     { key: 'rating', label: 'Rating', categoria: 'Rating' },
   ];

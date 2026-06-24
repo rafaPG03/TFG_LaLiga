@@ -31,6 +31,59 @@ const PERCENTILES = [
     { key: 'percentil_regates', label: 'REG' },
 ];
 
+const ATRIBUTOS_TEMPORADA_BASE = [
+    { key: 'partidos', label: 'PJ', formato: 'entero' },
+    { key: 'goles', label: 'Goles', formato: 'entero' },
+    { key: 'asistencias', label: 'Asistencias', formato: 'entero' },
+    { key: 'nota_media', label: 'Nota', formato: 'decimal' },
+];
+
+const ATRIBUTOS_TEMPORADA = [
+    {
+        grupo: 'Porteria',
+        items: [
+            { key: 'paradas', label: 'Paradas', formato: 'entero' },
+            { key: 'goles_concedidos', label: 'Goles concedidos', formato: 'entero' },
+            { key: 'penaltis_parados', label: 'Penaltis parados', formato: 'entero' },
+        ],
+    },
+    {
+        grupo: 'Defensa',
+        items: [
+            { key: 'entradas', label: 'Entradas', formato: 'entero' },
+            { key: 'bloqueos', label: 'Bloqueos', formato: 'entero' },
+            { key: 'intercepciones', label: 'Intercepciones', formato: 'entero' },
+            { key: 'duelos_ganados', label: 'Duelos ganados', formato: 'entero' },
+            { key: 'duelos_totales', label: 'Duelos totales', formato: 'entero' },
+            { key: 'faltas_cometidas', label: 'Faltas cometidas', formato: 'entero' },
+            { key: 'regateado', label: 'Regateado', formato: 'entero' },
+            { key: 'amarillas', label: 'Amarillas', formato: 'entero' },
+            { key: 'rojas', label: 'Rojas', formato: 'entero' },
+        ],
+    },
+    {
+        grupo: 'Creacion',
+        items: [
+            { key: 'pases_totales', label: 'Pases totales', formato: 'entero' },
+            { key: 'pases_clave', label: 'Pases clave', formato: 'entero' },
+            { key: 'precision_pases', label: 'Precision pases', formato: 'porcentaje' },
+            { key: 'regates_intentados', label: 'Regates intentados', formato: 'entero' },
+            { key: 'regates_exito', label: 'Regates exitosos', formato: 'entero' },
+        ],
+    },
+    {
+        grupo: 'Ataque',
+        items: [
+            { key: 'tiros_totales', label: 'Tiros totales', formato: 'entero' },
+            { key: 'tiros_a_puerta', label: 'Tiros a puerta', formato: 'entero' },
+            { key: 'faltas_sufridas', label: 'Faltas sufridas', formato: 'entero' },
+            { key: 'penaltis_marcados', label: 'Penaltis marcados', formato: 'entero' },
+        ],
+    },
+];
+
+const META_ATRIBUTOS_TEMPORADA = ATRIBUTOS_TEMPORADA.flatMap((grupo) => grupo.items);
+
 const COLORES_RADAR = [
         '#1f77b4',
         '#ff7f0e',
@@ -59,6 +112,14 @@ const getColorPercentil = (valor) => {
     return '#f1c40f';
 };
 
+const formatTemporadaValue = (valor, formato) => {
+    const numero = Number(valor);
+    if (!Number.isFinite(numero)) return '-';
+    if (formato === 'decimal') return numero.toFixed(2);
+    if (formato === 'porcentaje') return `${Math.round(numero)}%`;
+    return String(Math.round(numero));
+};
+
 
 export default function AtributosJugador({ id_jugador, route }) {
     const jugadorId = id_jugador ?? route?.params?.id_jugador ?? route?.params?.idjugador;
@@ -70,6 +131,8 @@ export default function AtributosJugador({ id_jugador, route }) {
     const [temporadaSeleccionada, setTemporadaSeleccionada] = useState(null);
 
     const [comparaciones, setComparaciones] = useState([]);
+    const [selectorTemporadaAbierto, setSelectorTemporadaAbierto] = useState(false);
+    const [atributoTemporada, setAtributoTemporada] = useState(null);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [searchText, setSearchText] = useState('');
@@ -119,6 +182,8 @@ export default function AtributosJugador({ id_jugador, route }) {
                 setTemporadasDisponibles([]);
                 setTemporadaSeleccionada(null);
                 setComparaciones([]);
+                setSelectorTemporadaAbierto(false);
+                setAtributoTemporada(null);
                 return;
             }
 
@@ -134,12 +199,16 @@ export default function AtributosJugador({ id_jugador, route }) {
             setTemporadasDisponibles(temporadas.length > 0 ? temporadas : temporadaBase ? [temporadaBase] : []);
             setTemporadaSeleccionada(temporadaBase);
             setComparaciones([]);
+            setSelectorTemporadaAbierto(false);
+            setAtributoTemporada(null);
         } catch (_e) {
             setError('No se pudieron cargar los ratings del jugador');
             setRating(null);
             setTemporadasDisponibles([]);
             setTemporadaSeleccionada(null);
             setComparaciones([]);
+            setSelectorTemporadaAbierto(false);
+            setAtributoTemporada(null);
         } finally {
             setCargando(false);
         }
@@ -265,6 +334,19 @@ export default function AtributosJugador({ id_jugador, route }) {
     }, [comparaciones]);
 
     const radarDataComparacion2 = useMemo(() => [], []);
+
+    const atributoTemporadaSeleccionado = useMemo(
+        () => META_ATRIBUTOS_TEMPORADA.find((item) => item.key === atributoTemporada) || null,
+        [atributoTemporada]
+    );
+
+    const filasTemporada = useMemo(() => {
+        const filas = [...ATRIBUTOS_TEMPORADA_BASE];
+        if (atributoTemporadaSeleccionado && !filas.some((item) => item.key === atributoTemporadaSeleccionado.key)) {
+            filas.push(atributoTemporadaSeleccionado);
+        }
+        return filas;
+    }, [atributoTemporadaSeleccionado]);
 
     const percentilData = useMemo(() => {
         if (!rating) return [];
@@ -441,26 +523,111 @@ export default function AtributosJugador({ id_jugador, route }) {
                                 <Text style={styles.emptyCompareText}>Agrega un jugador para comparar</Text>
                             </View>
                         ) : (
-                            <View style={styles.tableWrap}>
-                                <View style={styles.tableHeader}>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText]}>Atributo</Text>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText]}>Jugador</Text>
-                                    <Text style={[styles.tableCell, styles.tableHeaderText]}>Comparacion</Text>
+                            <>
+                                <View style={styles.tableWrap}>
+                                    <View style={styles.tableHeader}>
+                                        <Text style={[styles.tableCell, styles.tableHeaderText]}>Atributo</Text>
+                                        <Text style={[styles.tableCell, styles.tableHeaderText]} numberOfLines={1}>
+                                            {rating?.nombre || 'Jugador'}
+                                        </Text>
+                                        <Text style={[styles.tableCell, styles.tableHeaderText]} numberOfLines={1}>
+                                            {comparaciones[0]?.nombre || 'Comparacion'}
+                                        </Text>
+                                    </View>
+                                    {ATRIBUTOS.map((attr) => {
+                                        const valA = toNumber(rating?.[attr.key]);
+                                        const valB = toNumber(comparaciones[0]?.rating?.[attr.key]);
+                                        const mejorA = valA > valB;
+                                        const mejorB = valB > valA;
+                                        return (
+                                            <View key={attr.key} style={styles.tableRow}>
+                                                <Text style={styles.tableCell}>{attr.label}</Text>
+                                                <Text style={[styles.tableCell, mejorA && styles.tableWinner]}>{valA.toFixed(2)}</Text>
+                                                <Text style={[styles.tableCell, mejorB && styles.tableWinner]}>{valB.toFixed(2)}</Text>
+                                            </View>
+                                        );
+                                    })}
                                 </View>
-                                {ATRIBUTOS.map((attr) => {
-                                    const valA = toNumber(rating?.[attr.key]);
-                                    const valB = toNumber(comparaciones[0]?.rating?.[attr.key]);
-                                    const mejorA = valA > valB;
-                                    const mejorB = valB > valA;
-                                    return (
-                                        <View key={attr.key} style={styles.tableRow}>
-                                            <Text style={styles.tableCell}>{attr.label}</Text>
-                                            <Text style={[styles.tableCell, mejorA && styles.tableWinner]}>{valA.toFixed(2)}</Text>
-                                            <Text style={[styles.tableCell, mejorB && styles.tableWinner]}>{valB.toFixed(2)}</Text>
+
+                                <View style={styles.seasonCompareBlock}>
+                                    <View style={styles.seasonCompareHeader}>
+                                        <Text style={styles.subsectionTitle}>Datos de temporada</Text>
+                                        <TouchableOpacity
+                                            style={styles.selectorDropdown}
+                                            onPress={() => setSelectorTemporadaAbierto((actual) => !actual)}
+                                            activeOpacity={0.85}
+                                        >
+                                            <Text style={styles.selectorTexto} numberOfLines={1}>
+                                                {atributoTemporadaSeleccionado?.label || 'Anadir atributo'}
+                                            </Text>
+                                            <Ionicons
+                                                name={selectorTemporadaAbierto ? 'chevron-up' : 'chevron-down'}
+                                                size={16}
+                                                color="#5f7f9b"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+
+                                    {selectorTemporadaAbierto ? (
+                                        <View style={styles.dropdownList}>
+                                            <ScrollView style={styles.dropdownScroll} nestedScrollEnabled>
+                                                {ATRIBUTOS_TEMPORADA.map((grupo) => (
+                                                    <View key={grupo.grupo}>
+                                                        <Text style={styles.dropdownGroup}>{grupo.grupo}</Text>
+                                                        {grupo.items.map((item) => {
+                                                            const activo = item.key === atributoTemporada;
+                                                            return (
+                                                                <TouchableOpacity
+                                                                    key={item.key}
+                                                                    style={[styles.dropdownItem, activo && styles.dropdownItemActive]}
+                                                                    onPress={() => {
+                                                                        setAtributoTemporada(item.key);
+                                                                        setSelectorTemporadaAbierto(false);
+                                                                    }}
+                                                                    activeOpacity={0.85}
+                                                                >
+                                                                    <Text style={[styles.dropdownItemText, activo && styles.dropdownItemTextActive]}>
+                                                                        {item.label}
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            );
+                                                        })}
+                                                    </View>
+                                                ))}
+                                            </ScrollView>
                                         </View>
-                                    );
-                                })}
-                            </View>
+                                    ) : null}
+
+                                    <View style={styles.tableWrap}>
+                                        <View style={styles.tableHeader}>
+                                            <Text style={[styles.tableCell, styles.tableHeaderText]}>Dato</Text>
+                                            <Text style={[styles.tableCell, styles.tableHeaderText]} numberOfLines={1}>
+                                                {rating?.nombre || 'Jugador'}
+                                            </Text>
+                                            <Text style={[styles.tableCell, styles.tableHeaderText]} numberOfLines={1}>
+                                                {comparaciones[0]?.nombre || 'Comparacion'}
+                                            </Text>
+                                        </View>
+                                        {filasTemporada.map((attr) => {
+                                            const valA = Number(rating?.[attr.key]);
+                                            const valB = Number(comparaciones[0]?.rating?.[attr.key]);
+                                            const mejorA = Number.isFinite(valA) && Number.isFinite(valB) && valA > valB;
+                                            const mejorB = Number.isFinite(valA) && Number.isFinite(valB) && valB > valA;
+                                            return (
+                                                <View key={attr.key} style={styles.tableRow}>
+                                                    <Text style={styles.tableCell}>{attr.label}</Text>
+                                                    <Text style={[styles.tableCell, mejorA && styles.tableWinner]}>
+                                                        {formatTemporadaValue(rating?.[attr.key], attr.formato)}
+                                                    </Text>
+                                                    <Text style={[styles.tableCell, mejorB && styles.tableWinner]}>
+                                                        {formatTemporadaValue(comparaciones[0]?.rating?.[attr.key], attr.formato)}
+                                                    </Text>
+                                                </View>
+                                            );
+                                        })}
+                                    </View>
+                                </View>
+                            </>
                         )}
                     </View>
                 ) : null}
@@ -796,6 +963,75 @@ const styles = StyleSheet.create({
     },
     tableWinner: {
         color: '#1f6fa7',
+    },
+    seasonCompareBlock: {
+        marginTop: 14,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#eef3f8',
+    },
+    seasonCompareHeader: {
+        marginBottom: 10,
+    },
+    subsectionTitle: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: '#0f2743',
+        marginBottom: 8,
+    },
+    selectorDropdown: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d9e5f0',
+        backgroundColor: '#ffffff',
+        paddingHorizontal: 12,
+        paddingVertical: 9,
+    },
+    selectorTexto: {
+        flex: 1,
+        paddingRight: 8,
+        fontSize: 12,
+        color: '#1e3f66',
+        fontWeight: '700',
+    },
+    dropdownList: {
+        marginBottom: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#d9e5f0',
+        backgroundColor: '#ffffff',
+        maxHeight: 230,
+        overflow: 'hidden',
+    },
+    dropdownScroll: {
+        paddingVertical: 6,
+    },
+    dropdownGroup: {
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: 4,
+        color: '#6b86a1',
+        fontSize: 11,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+    },
+    dropdownItem: {
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    dropdownItemActive: {
+        backgroundColor: '#edf3f9',
+    },
+    dropdownItemText: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#1e3f66',
+    },
+    dropdownItemTextActive: {
+        color: '#0f2743',
     },
     axisLabel: {
         fontSize: 10,

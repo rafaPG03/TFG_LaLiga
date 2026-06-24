@@ -1,25 +1,30 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StatusBar,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { CommonActions } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
+import { useFavoritos } from '../context/FavoritosContext';
+
+const SESSION_KEY = '@tfg/session';
 
 export default function PerfilScreen({navigation, route}) {
    const { usuarioId } = route.params || {};
+   const { refreshSession } = useFavoritos();
    const [usuario, setUsuario] = useState(null);
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
+   const [cerrandoSesion, setCerrandoSesion] = useState(false);
 
    useEffect(() => {
       if (!usuarioId) {
@@ -57,6 +62,52 @@ export default function PerfilScreen({navigation, route}) {
       };
    }, [usuarioId]);
 
+   const cerrarSesion = async () => {
+      if (cerrandoSesion) {
+         return;
+      }
+
+      setCerrandoSesion(true);
+
+      try {
+         const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
+         const sesion = rawSesion ? JSON.parse(rawSesion) : null;
+         const idSesion = Number(sesion?.id) || null;
+
+         if (!rawSesion && !usuarioId) {
+            Alert.alert('Aviso', 'No hay una sesion activa que cerrar.');
+         }
+
+         try {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/logout`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ id_usuario: idSesion || usuarioId || null }),
+            });
+
+            if (!response.ok) {
+               throw new Error('Logout no disponible');
+            }
+         } catch (error) {
+            Alert.alert('Aviso', 'No se pudo cerrar sesion en el servidor.');
+         }
+
+         await AsyncStorage.removeItem(SESSION_KEY);
+         await refreshSession();
+
+         navigation.dispatch(
+            CommonActions.reset({
+               index: 0,
+               routes: [{ name: 'Login' }],
+            })
+         );
+      } catch (error) {
+         Alert.alert('Error', 'No se pudo cerrar sesion. Intentalo otra vez.');
+      } finally {
+         setCerrandoSesion(false);
+      }
+   };
+
    return (
       <KeyboardAvoidingView
          style={styles.container}
@@ -79,7 +130,16 @@ export default function PerfilScreen({navigation, route}) {
 					<Text style={styles.emailUsuario}>{usuario?.email}</Text>
             </View>
             <View style={styles.opcionesContainer}>
-               <TouchableOpacity style={styles.opcionItem} activeOpacity={0.8}>
+               <TouchableOpacity
+                  style={styles.opcionItem}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                     navigation.navigate('EditPerfil', {
+                        usuarioId,
+                        usuario,
+                     })
+                  }
+               >
                   <Ionicons name="pencil-outline" size={20} color="#1f6fa7" />
                   <Text style={styles.opcionTexto}>Editar perfil</Text>
                </TouchableOpacity>
@@ -87,9 +147,20 @@ export default function PerfilScreen({navigation, route}) {
                   <Ionicons name="shield-outline" size={20} color="#1f6fa7" />
                   <Text style={styles.opcionTexto}>Cambiar contraseña</Text>
                </TouchableOpacity>
-               <TouchableOpacity style={styles.opcionItem} activeOpacity={0.8}>
-                  <Ionicons name="log-out-outline" size={20} color="#1f6fa7" />
-                  <Text style={styles.opcionTexto}>Cerrar sesión</Text> 
+               <TouchableOpacity
+                  style={[styles.opcionItem, cerrandoSesion && styles.opcionItemDisabled]}
+                  activeOpacity={0.8}
+                  onPress={cerrarSesion}
+                  disabled={cerrandoSesion}
+               >
+                  {cerrandoSesion ? (
+                     <ActivityIndicator size="small" color="#1f6fa7" />
+                  ) : (
+                     <Ionicons name="log-out-outline" size={20} color="#1f6fa7" />
+                  )}
+                  <Text style={styles.opcionTexto}>
+                     {cerrandoSesion ? 'Cerrando sesion...' : 'Cerrar sesion'}
+                  </Text> 
                </TouchableOpacity>
             </View>
          </ScrollView>
@@ -164,6 +235,9 @@ datosContainer: {
       backgroundColor: '#f4f8fc',
       borderWidth: 3,
       borderColor: '#d9e5f0',
+   },
+   opcionItemDisabled: {
+      opacity: 0.7,
    },
    opcionTexto: {
       marginLeft: 12,

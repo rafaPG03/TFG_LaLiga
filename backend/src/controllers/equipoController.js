@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const pool = require("../config/db");
 
 const toNumber = (valor) => {
   const n = Number(valor);
@@ -9,32 +9,37 @@ const getEquipoPorId = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query('SELECT * FROM dim_equipo WHERE id_equipo = $1', [id]);
+    const result = await pool.query(
+      "SELECT * FROM dim_equipo WHERE id_equipo = $1",
+      [id],
+    );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Equipo no encontrado' });
+      return res.status(404).json({ error: "Equipo no encontrado" });
     }
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error al obtener el equipo:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error al obtener el equipo:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
 const getEquipos = async (req, res) => {
   try {
-    const result = await pool.query('SELECT id_equipo, nombre_equipo, logo FROM dim_equipo ORDER BY nombre_equipo');
+    const result = await pool.query(
+      "SELECT id_equipo, nombre_equipo, logo FROM dim_equipo ORDER BY nombre_equipo",
+    );
     res.json(result.rows);
   } catch (error) {
-    console.error('Error al obtener los equipos:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error al obtener los equipos:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
 const getStatsEquipoPorId = async (req, res) => {
   const { id_equipo } = req.params;
-  const { temporada } = req.query; 
+  const { temporada } = req.query;
 
   console.log("ID Equipo:", id_equipo); // Debería salir 529
   console.log("Temporada recibida:", temporada); // Debería salir 2019
@@ -53,7 +58,9 @@ const getStatsEquipoPorId = async (req, res) => {
     const result = await pool.query(query, [id_equipo, temporada]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ mensaje: "No hay datos para esta temporada" });
+      return res
+        .status(404)
+        .json({ mensaje: "No hay datos para esta temporada" });
     }
 
     res.json(result.rows);
@@ -97,7 +104,9 @@ const getPartidosEquipoPorId = async (req, res) => {
     const result = await pool.query(query, [id_equipo, temporada]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ mensaje: "No hay datos para esta temporada" });
+      return res
+        .status(404)
+        .json({ mensaje: "No hay datos para esta temporada" });
     }
 
     res.json(result.rows);
@@ -112,7 +121,7 @@ const getPlantillaEquipoPorTemporada = async (req, res) => {
   const { temporada } = req.query;
 
   if (!temporada) {
-    return res.status(400).json({ error: 'La temporada es obligatoria' });
+    return res.status(400).json({ error: "La temporada es obligatoria" });
   }
 
   try {
@@ -144,13 +153,15 @@ const getPlantillaEquipoPorTemporada = async (req, res) => {
     const result = await pool.query(query, [id_equipo, temporada]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ mensaje: 'No hay datos para esta temporada' });
+      return res
+        .status(404)
+        .json({ mensaje: "No hay datos para esta temporada" });
     }
 
     res.json(result.rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ error: 'Error al obtener la plantilla del equipo' });
+    res.status(500).json({ error: "Error al obtener la plantilla del equipo" });
   }
 };
 
@@ -256,13 +267,15 @@ const getTrayectoriaEquipoPorTemporada = async (req, res) => {
     const result = await pool.query(query, [id_equipo]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ mensaje: 'No hay datos para este equipo' });
+      return res.status(404).json({ mensaje: "No hay datos para este equipo" });
     }
 
     res.json(result.rows);
   } catch (err) {
     console.error(err.message);
-    res.status(500).json({ error: 'Error al obtener la trayectoria del equipo' });
+    res
+      .status(500)
+      .json({ error: "Error al obtener la trayectoria del equipo" });
   }
 };
 
@@ -270,23 +283,26 @@ const getInfoEquipo = async (req, res) => {
   const { id_equipo } = req.params;
 
   try {
-    const equipoResult = await pool.query('SELECT * FROM dim_equipo WHERE id_equipo = $1', [id_equipo]);
+    const equipoResult = await pool.query(
+      "SELECT * FROM dim_equipo WHERE id_equipo = $1",
+      [id_equipo],
+    );
 
     if (equipoResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Equipo no encontrado' });
+      return res.status(404).json({ error: "Equipo no encontrado" });
     }
 
     const temporadaResult = await pool.query(
-      'SELECT MAX(temporada) AS temporada FROM h_equipo_temporada WHERE id_equipo = $1',
-      [id_equipo]
+      "SELECT MAX(temporada) AS temporada FROM h_equipo_temporada WHERE id_equipo = $1",
+      [id_equipo],
     );
     const temporada = Number(temporadaResult.rows[0]?.temporada) || null;
 
     let jornada = null;
     if (temporada) {
       const jornadaResult = await pool.query(
-        'SELECT MAX(jornada) AS jornada FROM h_equipo_temporada WHERE temporada = $1',
-        [temporada]
+        "SELECT MAX(jornada) AS jornada FROM h_equipo_temporada WHERE temporada = $1",
+        [temporada],
       );
       jornada = Number(jornadaResult.rows[0]?.jornada) || null;
     }
@@ -310,17 +326,20 @@ const getInfoEquipo = async (req, res) => {
           WHERE h.temporada = $1 AND h.jornada = $2
           ORDER BY h.posicion ASC;
         `,
-        [temporada, jornada]
+        [temporada, jornada],
       );
       clasificacion = clasificacionResult.rows;
     }
 
-    const idxEquipo = clasificacion.findIndex((row) => Number(row.id_equipo) === Number(id_equipo));
+    const idxEquipo = clasificacion.findIndex(
+      (row) => Number(row.id_equipo) === Number(id_equipo),
+    );
     const equipoActual = idxEquipo >= 0 ? clasificacion[idxEquipo] : null;
     const equipoArriba = idxEquipo > 0 ? clasificacion[idxEquipo - 1] : null;
-    const equipoAbajo = idxEquipo >= 0 && idxEquipo < clasificacion.length - 1
-      ? clasificacion[idxEquipo + 1]
-      : null;
+    const equipoAbajo =
+      idxEquipo >= 0 && idxEquipo < clasificacion.length - 1
+        ? clasificacion[idxEquipo + 1]
+        : null;
 
     const clasificacionInfo = {
       temporada,
@@ -330,33 +349,35 @@ const getInfoEquipo = async (req, res) => {
       partidos_jugados: equipoActual?.partidos_jugados ?? null,
       equipo_actual: equipoActual
         ? {
-          id_equipo: equipoActual.id_equipo,
-          nombre_equipo: equipoActual.nombre_equipo,
-          logo: equipoActual.logo,
-        }
+            id_equipo: equipoActual.id_equipo,
+            nombre_equipo: equipoActual.nombre_equipo,
+            logo: equipoActual.logo,
+          }
         : null,
       equipo_arriba: equipoArriba
         ? {
-          id_equipo: equipoArriba.id_equipo,
-          nombre_equipo: equipoArriba.nombre_equipo,
-          logo: equipoArriba.logo,
-          puntos: equipoArriba.puntos,
-        }
+            id_equipo: equipoArriba.id_equipo,
+            nombre_equipo: equipoArriba.nombre_equipo,
+            logo: equipoArriba.logo,
+            puntos: equipoArriba.puntos,
+          }
         : null,
       equipo_abajo: equipoAbajo
         ? {
-          id_equipo: equipoAbajo.id_equipo,
-          nombre_equipo: equipoAbajo.nombre_equipo,
-          logo: equipoAbajo.logo,
-          puntos: equipoAbajo.puntos,
-        }
+            id_equipo: equipoAbajo.id_equipo,
+            nombre_equipo: equipoAbajo.nombre_equipo,
+            logo: equipoAbajo.logo,
+            puntos: equipoAbajo.puntos,
+          }
         : null,
-      diferencia_arriba: equipoArriba && equipoActual
-        ? Number(equipoArriba.puntos || 0) - Number(equipoActual.puntos || 0)
-        : null,
-      diferencia_abajo: equipoAbajo && equipoActual
-        ? Number(equipoActual.puntos || 0) - Number(equipoAbajo.puntos || 0)
-        : null,
+      diferencia_arriba:
+        equipoArriba && equipoActual
+          ? Number(equipoArriba.puntos || 0) - Number(equipoActual.puntos || 0)
+          : null,
+      diferencia_abajo:
+        equipoAbajo && equipoActual
+          ? Number(equipoActual.puntos || 0) - Number(equipoAbajo.puntos || 0)
+          : null,
     };
 
     const partidosResult = await pool.query(
@@ -386,7 +407,7 @@ const getInfoEquipo = async (req, res) => {
         ORDER BY t.anio DESC, t.mes DESC, t.dia DESC, p.hora DESC
         LIMIT 5;
       `,
-      [id_equipo]
+      [id_equipo],
     );
     const proximosPartidos = partidosResult.rows;
 
@@ -417,14 +438,15 @@ const getInfoEquipo = async (req, res) => {
         ORDER BY t.anio, t.mes, t.dia, p.hora
         LIMIT 1;
       `,
-      [id_equipo]
+      [id_equipo],
     );
     const proximoPartido = proximoPartidoResult.rows[0] || null;
 
     let destacados = { minutos: null, goles: null, rating: null };
     if (temporada) {
       const partidosEquipo = toNumber(clasificacionInfo.partidos_jugados);
-      const minPartidosDestacados = partidosEquipo > 0 ? Math.ceil(partidosEquipo * 0.5) : 0;
+      const minPartidosDestacados =
+        partidosEquipo > 0 ? Math.ceil(partidosEquipo * 0.5) : 0;
       const [minutosResult, golesResult, ratingResult] = await Promise.all([
         pool.query(
           `
@@ -438,7 +460,7 @@ const getInfoEquipo = async (req, res) => {
             ORDER BY h.minutos DESC, h.partidos DESC
             LIMIT 1;
           `,
-          [id_equipo, temporada, minPartidosDestacados]
+          [id_equipo, temporada, minPartidosDestacados],
         ),
         pool.query(
           `
@@ -452,7 +474,7 @@ const getInfoEquipo = async (req, res) => {
             ORDER BY h.goles DESC, h.partidos DESC
             LIMIT 1;
           `,
-          [id_equipo, temporada, minPartidosDestacados]
+          [id_equipo, temporada, minPartidosDestacados],
         ),
         pool.query(
           `
@@ -466,7 +488,7 @@ const getInfoEquipo = async (req, res) => {
             ORDER BY h.nota_media DESC, h.partidos DESC
             LIMIT 1;
           `,
-          [id_equipo, temporada, minPartidosDestacados]
+          [id_equipo, temporada, minPartidosDestacados],
         ),
       ]);
 
@@ -493,7 +515,7 @@ const getInfoEquipo = async (req, res) => {
         ORDER BY AVG(h.nota_media) DESC, SUM(h.partidos) DESC
         LIMIT 5;
       `,
-      [id_equipo]
+      [id_equipo],
     );
 
     res.json({
@@ -506,12 +528,413 @@ const getInfoEquipo = async (req, res) => {
       historicos: historicosResult.rows,
     });
   } catch (error) {
-    console.error('Error al obtener el resumen del equipo:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error al obtener el resumen del equipo:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
+const getDashboardEquipo = async (req, res) => {
+  const { id_equipo } = req.params;
+  const temporadaQuery = Number(req.query.temporada);
+  const temporadaSolicitada = Number.isInteger(temporadaQuery)
+    ? temporadaQuery
+    : null;
 
+  try {
+    const equipoResult = await pool.query(
+      "SELECT * FROM dim_equipo WHERE id_equipo = $1",
+      [id_equipo],
+    );
+
+    if (equipoResult.rows.length === 0) {
+      return res.status(404).json({ error: "Equipo no encontrado" });
+    }
+
+    let temporada = temporadaSolicitada;
+    if (!temporada) {
+      const temporadaResult = await pool.query(
+        "SELECT MAX(temporada) AS temporada FROM h_equipo_temporada WHERE id_equipo = $1",
+        [id_equipo],
+      );
+      temporada = Number(temporadaResult.rows[0]?.temporada) || null;
+    }
+
+    if (!temporada) {
+      return res
+        .status(404)
+        .json({ error: "No hay datos de temporada para este equipo" });
+    }
+
+    const [
+      temporadasResult,
+      lineaResult,
+      ratingsResult,
+      radarResult,
+      jugadoresResult,
+      partidosResult,
+      proximoPartidoResult,
+      referenciasResult,
+    ] = await Promise.all([
+      pool.query(
+        `
+          SELECT DISTINCT temporada
+          FROM h_equipo_temporada
+          WHERE id_equipo = $1
+          ORDER BY temporada DESC;
+        `,
+        [id_equipo],
+      ),
+      pool.query(
+        `
+          SELECT
+            jornada,
+            posicion,
+            puntos,
+            dg,
+            gf,
+            gc,
+            forma,
+            partidos_jugados,
+            victorias,
+            empates,
+            derrotas
+          FROM h_equipo_temporada
+          WHERE id_equipo = $1
+            AND temporada = $2
+          ORDER BY jornada ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            p.id_partido,
+            t.jornada,
+            AVG(COALESCE(h.nota, 0)) AS nota_media_equipo
+          FROM h_jugador_partido h
+          JOIN dim_partidos p ON h.id_partido = p.id_partido
+          JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+          WHERE h.id_equipo = $1
+            AND p.temporada = $2
+            AND p.status = 'Completado'
+            AND h.nota > 0.1
+          GROUP BY p.id_partido, t.jornada
+          ORDER BY t.jornada ASC, p.id_partido ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            AVG(COALESCE(r.ataque, 0)) AS ataque,
+            AVG(COALESCE(r.creacion, 0)) AS creacion,
+            AVG(COALESCE(r.defensa, 0)) AS defensa,
+            AVG(COALESCE(r.porteros, 0)) AS porteros,
+            AVG(COALESCE(r.duelos, 0)) AS duelos,
+            AVG(COALESCE(r.regates, 0)) AS regates
+          FROM h_jugadores_ratings r
+          JOIN h_jugador_temporada h
+            ON h.id_jugador = r.id_jugador
+           AND h.temporada = r.temporada
+           AND h.id_equipo = $1
+          WHERE r.temporada = $2;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            h.id_jugador,
+            h.id_equipo,
+            j.nombre,
+            h.posicion,
+            h.partidos,
+            h.minutos,
+            h.nota_media,
+            h.goles,
+            h.asistencias,
+            h.tiros_totales,
+            h.pases_totales,
+            h.pases_clave,
+            h.precision_pases,
+            h.entradas,
+            h.bloqueos,
+            h.intercepciones
+          FROM h_jugador_temporada h
+          LEFT JOIN dim_jugador j ON j.id_jugador = h.id_jugador
+          WHERE h.id_equipo = $1
+            AND h.temporada = $2
+          ORDER BY COALESCE(h.minutos, 0) DESC, COALESCE(h.nota_media, 0) DESC, COALESCE(h.goles, 0) DESC, j.nombre ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            p.id_partido,
+            p.id_local,
+            p.id_visitante,
+            p.goles_local,
+            p.goles_visitante,
+            p.status,
+            p.hora,
+            t.anio,
+            t.mes,
+            t.dia,
+            t.jornada,
+            e_local.nombre_equipo AS equipo_local,
+            e_local.logo AS logo_local,
+            e_visitante.nombre_equipo AS equipo_visitante,
+            e_visitante.logo AS logo_visitante,
+            CASE
+              WHEN p.id_local = $1 THEN 'LOCAL'
+              ELSE 'VISITANTE'
+            END AS condicion,
+            CASE
+              WHEN p.id_local = $1 THEN p.id_visitante
+              ELSE p.id_local
+            END AS id_rival,
+            CASE
+              WHEN p.id_local = $1 THEN e_visitante.nombre_equipo
+              ELSE e_local.nombre_equipo
+            END AS rival_nombre,
+            CASE
+              WHEN p.id_local = $1 THEN e_visitante.logo
+              ELSE e_local.logo
+            END AS rival_logo,
+            CASE
+              WHEN p.id_local = $1 THEN p.goles_local
+              ELSE p.goles_visitante
+            END AS goles_equipo,
+            CASE
+              WHEN p.id_local = $1 THEN p.goles_visitante
+              ELSE p.goles_local
+            END AS goles_rival,
+            op.posicion AS posicion_rival
+          FROM dim_partidos p
+          JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+          JOIN dim_equipo e_local ON p.id_local = e_local.id_equipo
+          JOIN dim_equipo e_visitante ON p.id_visitante = e_visitante.id_equipo
+          LEFT JOIN h_equipo_temporada op
+            ON op.id_equipo = CASE
+              WHEN p.id_local = $1 THEN p.id_visitante
+              ELSE p.id_local
+            END
+           AND op.temporada = $2
+           AND op.jornada = t.jornada
+          WHERE p.temporada = $2
+            AND (p.id_local = $1 OR p.id_visitante = $1)
+            AND p.status = 'Completado'
+          ORDER BY t.jornada ASC, p.hora ASC, p.id_partido ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            p.id_partido,
+            p.id_local,
+            p.id_visitante,
+            p.goles_local,
+            p.goles_visitante,
+            p.status,
+            p.hora,
+            t.anio,
+            t.mes,
+            t.dia,
+            t.jornada,
+            e_local.nombre_equipo AS equipo_local,
+            e_local.logo AS logo_local,
+            e_visitante.nombre_equipo AS equipo_visitante,
+            e_visitante.logo AS logo_visitante
+          FROM dim_partidos p
+          JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+          JOIN dim_equipo e_local ON p.id_local = e_local.id_equipo
+          JOIN dim_equipo e_visitante ON p.id_visitante = e_visitante.id_equipo
+          WHERE (p.id_local = $1 OR p.id_visitante = $1)
+            AND p.temporada = $2
+            AND p.status IS DISTINCT FROM 'Completado'
+          ORDER BY t.jornada ASC, p.hora ASC
+          LIMIT 1;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            MAX(COALESCE(ataque, 0)) AS max_ataque,
+            MAX(COALESCE(creacion, 0)) AS max_creacion,
+            MAX(COALESCE(defensa, 0)) AS max_defensa,
+            MAX(COALESCE(porteros, 0)) AS max_porteros,
+            MAX(COALESCE(duelos, 0)) AS max_duelos,
+            MAX(COALESCE(regates, 0)) AS max_regates
+          FROM h_jugadores_ratings
+          WHERE temporada = $1;
+        `,
+        [temporada],
+      ),
+    ]);
+
+    const linea = lineaResult.rows || [];
+    const ratingsLinea = ratingsResult.rows || [];
+    const radar = radarResult.rows[0] || {};
+    const jugadores = jugadoresResult.rows || [];
+    const partidos = partidosResult.rows || [];
+    const proximoPartido = proximoPartidoResult.rows[0] || null;
+    const referencias = referenciasResult.rows[0] || {};
+    const temporadasDisponibles = (temporadasResult.rows || [])
+      .map((fila) => toNumber(fila.temporada))
+      .filter((valor) => Number.isFinite(valor));
+    const ultimaFila = linea[linea.length - 1] || null;
+
+    const partidosCompletados = partidos.map((partido) => {
+      const golesEquipo = toNumber(partido.goles_equipo);
+      const golesRival = toNumber(partido.goles_rival);
+      const resultado =
+        golesEquipo > golesRival ? "V" : golesEquipo < golesRival ? "D" : "E";
+
+      return {
+        ...partido,
+        goles_equipo: golesEquipo,
+        goles_rival: golesRival,
+        resultado,
+        puntos: resultado === "V" ? 3 : resultado === "E" ? 1 : 0,
+        posicion_rival: Number.isFinite(Number(partido.posicion_rival))
+          ? Number(partido.posicion_rival)
+          : null,
+      };
+    });
+
+    const ultimosPartidos = [...partidosCompletados].slice(-5).reverse();
+    const jornadaMaxima = partidosCompletados.reduce(
+      (max, partido) => Math.max(max, toNumber(partido.jornada)),
+      0,
+    );
+
+    const resumenLocalVisitante = partidosCompletados.reduce(
+      (acc, partido) => {
+        const clave = partido.condicion === "LOCAL" ? "local" : "visitante";
+        acc[clave].partidos += 1;
+        acc[clave].gf += partido.goles_equipo;
+        acc[clave].gc += partido.goles_rival;
+        acc[clave].puntos += partido.puntos;
+        acc[clave].victorias += partido.resultado === "V" ? 1 : 0;
+        acc[clave].empates += partido.resultado === "E" ? 1 : 0;
+        acc[clave].derrotas += partido.resultado === "D" ? 1 : 0;
+        return acc;
+      },
+      {
+        local: {
+          partidos: 0,
+          gf: 0,
+          gc: 0,
+          puntos: 0,
+          victorias: 0,
+          empates: 0,
+          derrotas: 0,
+        },
+        visitante: {
+          partidos: 0,
+          gf: 0,
+          gc: 0,
+          puntos: 0,
+          victorias: 0,
+          empates: 0,
+          derrotas: 0,
+        },
+      },
+    );
+
+    const bandasMapa = {
+      "Top 6": { victorias: 0, empates: 0, derrotas: 0, partidos: 0 },
+      "7-17": { victorias: 0, empates: 0, derrotas: 0, partidos: 0 },
+      Descenso: { victorias: 0, empates: 0, derrotas: 0, partidos: 0 },
+    };
+
+    partidosCompletados.forEach((partido) => {
+      const posicionRival = Number(partido.posicion_rival);
+      const banda =
+        Number.isFinite(posicionRival) && posicionRival <= 6
+          ? "Top 6"
+          : Number.isFinite(posicionRival) && posicionRival <= 17
+            ? "7-17"
+            : "Descenso";
+
+      bandasMapa[banda].partidos += 1;
+      if (partido.resultado === "V") bandasMapa[banda].victorias += 1;
+      if (partido.resultado === "E") bandasMapa[banda].empates += 1;
+      if (partido.resultado === "D") bandasMapa[banda].derrotas += 1;
+    });
+
+    const bandas = Object.entries(bandasMapa).map(([banda, valores]) => ({
+      banda,
+      ...valores,
+    }));
+
+    const clasificacionActual = ultimaFila
+      ? {
+          temporada,
+          jornada: ultimaFila.jornada,
+          posicion: ultimaFila.posicion,
+          puntos: ultimaFila.puntos,
+          dg: ultimaFila.dg,
+          gf: ultimaFila.gf,
+          gc: ultimaFila.gc,
+          forma: ultimaFila.forma,
+          partidos_jugados: ultimaFila.partidos_jugados,
+          victorias: ultimaFila.victorias,
+          empates: ultimaFila.empates,
+          derrotas: ultimaFila.derrotas,
+        }
+      : null;
+
+    res.json({
+      temporada,
+      jornada_maxima: jornadaMaxima || null,
+      temporadas_disponibles: temporadasDisponibles,
+      equipo: equipoResult.rows[0],
+      clasificacion_actual: clasificacionActual,
+      proximo_partido: proximoPartido,
+      posicion_linea: linea.map((fila) => ({
+        jornada: toNumber(fila.jornada),
+        posicion: toNumber(fila.posicion),
+        puntos: toNumber(fila.puntos),
+        dg: toNumber(fila.dg),
+        gf: toNumber(fila.gf),
+        gc: toNumber(fila.gc),
+        forma: fila.forma || "",
+      })),
+      media_ratings_partido: ratingsLinea.map((fila) => ({
+        id_partido: toNumber(fila.id_partido),
+        jornada: toNumber(fila.jornada),
+        nota_media_equipo: parseFloat(fila.nota_media_equipo) || 0,
+      })),
+      jugadores,
+      ultimos_partidos: ultimosPartidos,
+      resumen_local_visitante: resumenLocalVisitante,
+      bandas,
+      radar_referencias: {
+        max_ataque: toNumber(referencias.max_ataque) || 1,
+        max_creacion: toNumber(referencias.max_creacion) || 1,
+        max_defensa: toNumber(referencias.max_defensa) || 1,
+        max_porteros: toNumber(referencias.max_porteros) || 1,
+        max_duelos: toNumber(referencias.max_duelos) || 1,
+        max_regates: toNumber(referencias.max_regates) || 1,
+      },
+      radar_equipo: {
+        ataque: parseFloat(radar.ataque) || 0,
+        creacion: parseFloat(radar.creacion) || 0,
+        defensa: parseFloat(radar.defensa) || 0,
+        porteros: parseFloat(radar.porteros) || 0,
+        duelos: parseFloat(radar.duelos) || 0,
+        regates: parseFloat(radar.regates) || 0,
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener el dashboard del equipo:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
 
 module.exports = {
   getEquipoPorId,
@@ -521,4 +944,5 @@ module.exports = {
   getPlantillaEquipoPorTemporada,
   getTrayectoriaEquipoPorTemporada,
   getInfoEquipo,
+  getDashboardEquipo,
 };

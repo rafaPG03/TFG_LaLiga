@@ -217,9 +217,81 @@ const getRatingsJugador = async (req, res) => {
         }
 
         const query = `
-            SELECT *
-            FROM h_jugadores_ratings
-            WHERE id_jugador = $1 AND temporada = $2
+            WITH temporada_stats AS (
+                SELECT
+                    id_jugador,
+                    temporada,
+                    SUM(COALESCE(partidos, 0)) AS partidos,
+                    SUM(COALESCE(minutos, 0)) AS minutos,
+                    SUM(COALESCE(titular, 0)) AS titular,
+                    ROUND(
+                        (
+                            SUM(COALESCE(nota_media, 0) * COALESCE(NULLIF(partidos, 0), 1))
+                            / NULLIF(SUM(COALESCE(NULLIF(partidos, 0), 1)), 0)
+                        )::numeric,
+                        3
+                    ) AS nota_media,
+                    SUM(COALESCE(goles, 0)) AS goles,
+                    SUM(COALESCE(asistencias, 0)) AS asistencias,
+                    SUM(COALESCE(tiros_totales, 0)) AS tiros_totales,
+                    SUM(COALESCE(tiros_a_puerta, 0)) AS tiros_a_puerta,
+                    SUM(COALESCE(pases_totales, 0)) AS pases_totales,
+                    SUM(COALESCE(pases_clave, 0)) AS pases_clave,
+                    ROUND(AVG(precision_pases)::numeric, 0) AS precision_pases,
+                    SUM(COALESCE(entradas, 0)) AS entradas,
+                    SUM(COALESCE(bloqueos, 0)) AS bloqueos,
+                    SUM(COALESCE(intercepciones, 0)) AS intercepciones,
+                    SUM(COALESCE(duelos_totales, 0)) AS duelos_totales,
+                    SUM(COALESCE(duelos_ganados, 0)) AS duelos_ganados,
+                    SUM(COALESCE(faltas_sufridas, 0)) AS faltas_sufridas,
+                    SUM(COALESCE(faltas_cometidas, 0)) AS faltas_cometidas,
+                    SUM(COALESCE(regates_intentados, 0)) AS regates_intentados,
+                    SUM(COALESCE(regates_exito, 0)) AS regates_exito,
+                    SUM(COALESCE(regateado, 0)) AS regateado,
+                    SUM(COALESCE(amarillas, 0)) AS amarillas,
+                    SUM(COALESCE(rojas, 0)) AS rojas,
+                    SUM(COALESCE(penaltis_marcados, 0)) AS penaltis_marcados,
+                    SUM(COALESCE(goles_concedidos, 0)) AS goles_concedidos,
+                    SUM(COALESCE(paradas, 0)) AS paradas,
+                    SUM(COALESCE(penaltis_parados, 0)) AS penaltis_parados
+                FROM h_jugador_temporada
+                WHERE id_jugador = $1 AND temporada = $2
+                GROUP BY id_jugador, temporada
+            )
+            SELECT
+                r.*,
+                ts.partidos,
+                ts.minutos,
+                ts.titular,
+                ts.nota_media,
+                ts.goles,
+                ts.asistencias,
+                ts.tiros_totales,
+                ts.tiros_a_puerta,
+                ts.pases_totales,
+                ts.pases_clave,
+                ts.precision_pases,
+                ts.entradas,
+                ts.bloqueos,
+                ts.intercepciones,
+                ts.duelos_totales,
+                ts.duelos_ganados,
+                ts.faltas_sufridas,
+                ts.faltas_cometidas,
+                ts.regates_intentados,
+                ts.regates_exito,
+                ts.regateado,
+                ts.amarillas,
+                ts.rojas,
+                ts.penaltis_marcados,
+                ts.goles_concedidos,
+                ts.paradas,
+                ts.penaltis_parados
+            FROM h_jugadores_ratings r
+            LEFT JOIN temporada_stats ts
+              ON ts.id_jugador = r.id_jugador
+             AND ts.temporada = r.temporada
+            WHERE r.id_jugador = $1 AND r.temporada = $2
         `;
         const result = await pool.query(query, [id_jugador, temporadaSeleccionada]);
         res.json(result.rows);

@@ -72,6 +72,14 @@ export default function DetallePartidoScreen({navigation, route}) {
       }
    };
 
+   const irDetalleEquipo = (idEquipo) => {
+      if (!idEquipo) {
+         return;
+      }
+
+      navigation.navigate('DetalleEquipo', { idEquipo });
+   };
+
    return (
       <KeyboardAvoidingView
          style={styles.container}
@@ -88,20 +96,32 @@ export default function DetallePartidoScreen({navigation, route}) {
             </Text>
             <View style={styles.marcadorRow}>
                <View style={styles.equipoCol}>
-                  <View style={styles.logoEquipoWrap}>
+                  <TouchableOpacity
+                     style={styles.logoEquipoWrap}
+                     onPress={() => irDetalleEquipo(partidoInfo?.id_local)}
+                     activeOpacity={0.85}
+                     disabled={!partidoInfo?.id_local}
+                  >
                      <Image source={{ uri: partidoInfo?.logo_local }} style={styles.logoEquipo} />
-                  </View>
+                  </TouchableOpacity>
                   <Text style={styles.nombreEquipo} numberOfLines={2}>
                      {partidoInfo?.equipo_local}
                   </Text>
                </View>
                <Text style={styles.golesText}>
-                  {partidoInfo ? `${partidoInfo.goles_local} - ${partidoInfo.goles_visitante}` : 'Cargando...'}
+                  {partidoInfo?.goles_local != null && partidoInfo?.goles_visitante != null
+                     ? `${partidoInfo.goles_local} - ${partidoInfo.goles_visitante}`
+                     : '- -'}
                </Text>
                <View style={styles.equipoCol}>
-                  <View style={styles.logoEquipoWrap}>
+                  <TouchableOpacity
+                     style={styles.logoEquipoWrap}
+                     onPress={() => irDetalleEquipo(partidoInfo?.id_visitante)}
+                     activeOpacity={0.85}
+                     disabled={!partidoInfo?.id_visitante}
+                  >
                      <Image source={{ uri: partidoInfo?.logo_visitante }} style={styles.logoEquipo} />
-                  </View>
+                  </TouchableOpacity>
                   <Text style={styles.nombreEquipo} numberOfLines={2}>
                      {partidoInfo?.equipo_visitante}
                   </Text>
@@ -114,12 +134,17 @@ export default function DetallePartidoScreen({navigation, route}) {
          </View>
          <Tab.Navigator
          screenOptions={{
-            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
+            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
             tabBarIndicatorStyle: { backgroundColor: '#e20613' }, // Rojo LaLiga
             tabBarActiveTintColor: '#12233f',
+            tabBarInactiveTintColor: '#6f8096',
+            tabBarStyle: { backgroundColor: '#ffffff' },
+            tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
+            tabBarScrollEnabled: true,
+            lazy: true,
          }}
          >
-            <Tab.Screen name="Previa">
+            <Tab.Screen name="Previa" options={{ tabBarLabel: 'PREVIA' }}>
                {(props) => (
                   <PreviaTab
                      {...props}
@@ -137,7 +162,7 @@ export default function DetallePartidoScreen({navigation, route}) {
                   />
                )}
             </Tab.Screen>
-            <Tab.Screen name="Alineacion">
+            <Tab.Screen name="Alineacion" options={{ tabBarLabel: 'ALINEACION' }}>
                {(props) => (
                   <AlineacionTab
                      {...props}
@@ -152,7 +177,7 @@ export default function DetallePartidoScreen({navigation, route}) {
                   />
                )}
             </Tab.Screen>
-            <Tab.Screen name="Eventos">
+            <Tab.Screen name="Eventos" options={{ tabBarLabel: 'EVENTOS' }}>
                {(props) => (
                   <EventosTab
                      {...props}
@@ -167,7 +192,7 @@ export default function DetallePartidoScreen({navigation, route}) {
                   />
                )}
             </Tab.Screen>
-            <Tab.Screen name="Post-Partido">
+            <Tab.Screen name="Post-Partido" options={{ tabBarLabel: 'POST-PARTIDO' }}>
                {(props) => (
                   <PostPartidoTab
                      {...props}

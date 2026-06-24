@@ -88,4 +88,36 @@ const getUsuarioPorId = async (req, res) => {
   }
 };
 
-module.exports = { registrarUsuario, loginUsuario, getUsuarioPorId };
+const actualizarUsuario = async (req, res) => {
+  const { id } = req.params;
+  const { nombre_usuario, email } = req.body;
+
+  if (!nombre_usuario || !email) {
+    return res.status(400).json({ error: 'Nombre de usuario y email son obligatorios' });
+  }
+
+  try {
+    const query = `
+      UPDATE dim_usuario
+      SET nombre_usuario = $1, email = $2
+      WHERE id_usuario = $3
+      RETURNING id_usuario, nombre_usuario, email
+    `;
+    const result = await pool.query(query, [nombre_usuario, email, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    if (err.code === '23505') {
+      return res.status(409).json({ error: 'Nombre de usuario o email ya existe' });
+    }
+
+    console.error(err.message);
+    res.status(500).json({ error: 'Error al actualizar usuario' });
+  }
+};
+
+module.exports = { registrarUsuario, loginUsuario, getUsuarioPorId, actualizarUsuario };

@@ -42,7 +42,7 @@ export default function TemporadaScreen({navigation}) {
    }, []);
 
    const irDetallesTemporada = (temporada) => {
-      navigation.navigate('DetallesTemporada', { temporada });
+      navigation.navigate('DetalleTemporada', { temporada });
    };
 
    const renderEstadoVacio = () => {

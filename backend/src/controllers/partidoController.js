@@ -211,7 +211,7 @@ const getJugadoresDestacadosPartido = async (req, res) => {
                 h.id_jugador,
                 h.id_equipo,
                 SUM(COALESCE(h.goles, 0) + COALESCE(h.asistencias, 0)) as ga,
-                COUNT(h.id_partido) as total_partidos,
+                SUM(COALESCE(h.minutos, 0)) as minutos,
                 AVG(COALESCE(h.nota, 0)) as rating
             FROM h_jugador_partido h
             JOIN dim_partidos p ON h.id_partido = p.id_partido
@@ -226,9 +226,9 @@ const getJugadoresDestacadosPartido = async (req, res) => {
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
             WHERE s.id_equipo = $1 ORDER BY s.ga DESC LIMIT 1)
             UNION ALL
-            (SELECT j.id_jugador, j.nombre, j.foto, s.total_partidos AS valor, 'Partidos' AS categoria, 'local' AS tipo_equipo
+            (SELECT j.id_jugador, j.nombre, j.foto, s.minutos AS valor, 'Minutos' AS categoria, 'local' AS tipo_equipo
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
-            WHERE s.id_equipo = $1 ORDER BY s.total_partidos DESC LIMIT 1)
+            WHERE s.id_equipo = $1 ORDER BY s.minutos DESC LIMIT 1)
             UNION ALL
             (SELECT j.id_jugador, j.nombre, j.foto, s.rating AS valor, 'Rating' AS categoria, 'local' AS tipo_equipo
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
@@ -241,9 +241,9 @@ const getJugadoresDestacadosPartido = async (req, res) => {
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
             WHERE s.id_equipo = $2 ORDER BY s.ga DESC LIMIT 1)
             UNION ALL
-            (SELECT j.id_jugador, j.nombre, j.foto, s.total_partidos AS valor, 'Partidos' AS categoria, 'visitante' AS tipo_equipo
+            (SELECT j.id_jugador, j.nombre, j.foto, s.minutos AS valor, 'Minutos' AS categoria, 'visitante' AS tipo_equipo
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador
-            WHERE s.id_equipo = $2 ORDER BY s.total_partidos DESC LIMIT 1)
+            WHERE s.id_equipo = $2 ORDER BY s.minutos DESC LIMIT 1)
             UNION ALL
             (SELECT j.id_jugador, j.nombre, j.foto, s.rating AS valor, 'Rating' AS categoria, 'visitante' AS tipo_equipo
             FROM stats_acumuladas s JOIN dim_jugador j ON s.id_jugador = j.id_jugador

@@ -123,27 +123,29 @@ export default function DetalleJugadorScreen({navigation, route}) {
          </View>
          <Tab.Navigator
          screenOptions={{
-            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
+            tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
             tabBarIndicatorStyle: { backgroundColor: '#e20613' }, // Rojo LaLiga
             tabBarActiveTintColor: '#12233f',
                   tabBarInactiveTintColor: '#6f8096',
                   tabBarStyle: { backgroundColor: '#ffffff' },
+               tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
+               tabBarScrollEnabled: true,
                   lazy: true,
          }}
          >
-            <Tab.Screen name="Info" options={{ tabBarLabel: 'Info' }}>
+            <Tab.Screen name="INFO" options={{ tabBarLabel: 'INFO' }}>
                {() => <InfoTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="Partidos" options={{ tabBarLabel: 'Partidos' }}>
+            <Tab.Screen name="PARTIDOS" options={{ tabBarLabel: 'PARTIDOS' }}>
                {() => <PartidosJugTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="Trayectoria" options={{ tabBarLabel: 'Trayectoria' }}>
+            <Tab.Screen name="TRAYECTORIA" options={{ tabBarLabel: 'TRAYECTORIA' }}>
                {() => <TrayectoriaTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="Stats" options={{ tabBarLabel: 'Stats' }}>
+            <Tab.Screen name="STATS" options={{ tabBarLabel: 'STATS' }}>
                {() => <StatsJugTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="Atributos" options={{ tabBarLabel: 'Atributos' }}>
+            <Tab.Screen name="ATRIBUTOS" options={{ tabBarLabel: 'ATRIBUTOS' }}>
                {() => <AtributosTab id_jugador={id_jugador} />}
             </Tab.Screen>
          </Tab.Navigator>
