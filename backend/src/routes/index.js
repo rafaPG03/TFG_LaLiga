@@ -9,6 +9,8 @@ const jugadoresRoutes = require('./jugadores');
 const temporadasRoutes = require('./temporadas');
 const busquedaRoutes = require('./buscador');
 const favoritosRoutes = require('./favoritos');
+const chatRoutes = require("./chatbot");
+
 
 // Definimos los prefijos para cada recurso
 router.use('/equipos', equiposRoutes);
@@ -18,5 +20,6 @@ router.use('/temporadas', temporadasRoutes);
 router.use('/jugadores', jugadoresRoutes);
 router.use('/buscador', busquedaRoutes);
 router.use('/favoritos', favoritosRoutes);
+router.use("/chatbot", chatRoutes);
 
 module.exports = router;

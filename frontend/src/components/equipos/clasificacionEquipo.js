@@ -10,8 +10,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import MontecarloClasificacion from '../MontecarloClasificacion';
 
 const MODOS = ['TODO', 'LOCAL', 'VISITANTE'];
+const VISTAS = [
+	{ key: 'CLASIFICACION', label: 'CLASIFICACION' },
+	{ key: 'PROBABILIDADES', label: 'PROBABILIDADES' },
+];
 
 const COL_TEAM = 210;
 const COL_STAT = 48;
@@ -78,6 +83,7 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 	const [temporadaSeleccionada, setTemporadaSeleccionada] = useState(null);
 	const [jornadaSeleccionada, setJornadaSeleccionada] = useState(null);
 	const [modo, setModo] = useState('TODO');
+	const [vista, setVista] = useState('CLASIFICACION');
 
 	const cargarEquipos = async () => {
 		const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/equipos`);
@@ -359,7 +365,26 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 		<ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
 			<View style={styles.topBar}>
 				<Text style={styles.title}>Clasificacion</Text>
-				<Text style={styles.subtitle}>Tabla por temporada y jornada</Text>
+				<Text style={styles.subtitle}>
+					{vista === 'PROBABILIDADES'
+						? 'Probabilidades de final de temporada'
+						: 'Tabla por temporada y jornada'}
+				</Text>
+			</View>
+
+			<View style={styles.vistaRow}>
+				{VISTAS.map((item) => (
+					<TouchableOpacity
+						key={item.key}
+						style={[styles.vistaBtn, vista === item.key && styles.vistaBtnActive]}
+						onPress={() => setVista(item.key)}
+						activeOpacity={0.85}
+					>
+						<Text style={[styles.vistaText, vista === item.key && styles.vistaTextActive]}>
+							{item.label}
+						</Text>
+					</TouchableOpacity>
+				))}
 			</View>
 
 			<View style={styles.selectorBlock}>
@@ -382,64 +407,73 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 				</ScrollView>
 			</View>
 
-			<View style={styles.selectorBlock}>
-				<Text style={styles.selectorLabel}>Jornada</Text>
-				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-					<View style={styles.selectorRow}>
-						{jornadas.map((jor) => (
+			{vista === 'PROBABILIDADES' ? (
+				<MontecarloClasificacion
+					temporada={temporadaSeleccionada}
+					equipoId={equipoId}
+				/>
+			) : (
+				<>
+					<View style={styles.selectorBlock}>
+						<Text style={styles.selectorLabel}>Jornada</Text>
+						<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+							<View style={styles.selectorRow}>
+								{jornadas.map((jor) => (
+									<TouchableOpacity
+										key={`jor-${jor}`}
+										style={[styles.chip, jor === jornadaSeleccionada && styles.chipActive]}
+										onPress={() => seleccionarJornada(jor)}
+										activeOpacity={0.85}
+									>
+										<Text style={[styles.chipText, jor === jornadaSeleccionada && styles.chipTextActive]}>
+											{jor}
+										</Text>
+									</TouchableOpacity>
+								))}
+							</View>
+						</ScrollView>
+					</View>
+
+					<View style={styles.modoRow}>
+						{MODOS.map((item) => (
 							<TouchableOpacity
-								key={`jor-${jor}`}
-								style={[styles.chip, jor === jornadaSeleccionada && styles.chipActive]}
-								onPress={() => seleccionarJornada(jor)}
+								key={item}
+								style={[styles.modoBtn, modo === item && styles.modoBtnActive]}
+								onPress={() => setModo(item)}
 								activeOpacity={0.85}
 							>
-								<Text style={[styles.chipText, jor === jornadaSeleccionada && styles.chipTextActive]}>
-									{jor}
-								</Text>
+								<Text style={[styles.modoText, modo === item && styles.modoTextActive]}>{item}</Text>
 							</TouchableOpacity>
 						))}
 					</View>
-				</ScrollView>
-			</View>
 
-			<View style={styles.modoRow}>
-				{MODOS.map((item) => (
-					<TouchableOpacity
-						key={item}
-						style={[styles.modoBtn, modo === item && styles.modoBtnActive]}
-						onPress={() => setModo(item)}
-						activeOpacity={0.85}
-					>
-						<Text style={[styles.modoText, modo === item && styles.modoTextActive]}>{item}</Text>
-					</TouchableOpacity>
-				))}
-			</View>
-
-			{rowsMostrar.length === 0 ? (
-				<View style={styles.emptyRow}>
-					<Ionicons name="stats-chart-outline" size={18} color="#6d839a" />
-					<Text style={styles.emptyText}>No hay datos de clasificacion</Text>
-				</View>
-			) : (
-				<View style={styles.tablaWrap}>
-					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-						<View>
-							<View style={styles.headerRow}>
-								<View style={styles.teamHeaderCell}>
-									<Text style={styles.headerText}>Pos</Text>
-									<Text style={styles.headerText}>Equipo</Text>
-								</View>
-								{STATS.map((col) => (
-									<View key={col.key} style={styles.statHeaderCell}>
-										<Text style={styles.headerText}>{col.label}</Text>
-									</View>
-								))}
-							</View>
-
-							{rowsMostrar.map((row, idx) => renderFila(row, idx))}
+					{rowsMostrar.length === 0 ? (
+						<View style={styles.emptyRow}>
+							<Ionicons name="stats-chart-outline" size={18} color="#6d839a" />
+							<Text style={styles.emptyText}>No hay datos de clasificacion</Text>
 						</View>
-					</ScrollView>
-				</View>
+					) : (
+						<View style={styles.tablaWrap}>
+							<ScrollView horizontal showsHorizontalScrollIndicator={false}>
+								<View>
+									<View style={styles.headerRow}>
+										<View style={styles.teamHeaderCell}>
+											<Text style={styles.headerText}>Pos</Text>
+											<Text style={styles.headerText}>Equipo</Text>
+										</View>
+										{STATS.map((col) => (
+											<View key={col.key} style={styles.statHeaderCell}>
+												<Text style={styles.headerText}>{col.label}</Text>
+											</View>
+										))}
+									</View>
+
+									{rowsMostrar.map((row, idx) => renderFila(row, idx))}
+								</View>
+							</ScrollView>
+						</View>
+					)}
+				</>
 			)}
 		</ScrollView>
 	);
@@ -468,6 +502,30 @@ const styles = StyleSheet.create({
 		fontSize: 12,
 		color: '#55708d',
 		fontWeight: '600',
+	},
+	vistaRow: {
+		flexDirection: 'row',
+		gap: 8,
+		marginTop: 8,
+		marginBottom: 2,
+	},
+	vistaBtn: {
+		flex: 1,
+		borderRadius: 12,
+		paddingVertical: 10,
+		alignItems: 'center',
+		backgroundColor: '#eef3f9',
+	},
+	vistaBtnActive: {
+		backgroundColor: '#1f4f7a',
+	},
+	vistaText: {
+		fontSize: 12,
+		fontWeight: '800',
+		color: '#2a4763',
+	},
+	vistaTextActive: {
+		color: '#ffffff',
 	},
 	selectorBlock: {
 		marginTop: 10,

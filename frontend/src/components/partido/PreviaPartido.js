@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
 
 export default function PreviaTab({ route, navigation }) {
-  const { h2h, destacados, estado, partidoInfo } = route.params || {};
+  const { h2h, destacados, estado, partidoInfo, id_partido } = route.params || {};
+  const [dmData, setDmData] = useState(null);
+  const [dmLoading, setDmLoading] = useState(false);
+  const [dmError, setDmError] = useState('');
   const ultimosEnfrentamientos = Array.isArray(h2h) ? h2h.slice(0, 5) : [];
   const destacadosFlat = Array.isArray(destacados) ? destacados : [];
   const destacadosLocal = Array.isArray(destacados?.local)
@@ -107,6 +110,67 @@ export default function PreviaTab({ route, navigation }) {
   const formaLocal = parseForma(estado?.local_forma);
   const formaVisitante = parseForma(estado?.visitante_forma);
 
+  useEffect(() => {
+    const cargarDataMining = async () => {
+      if (!id_partido) {
+        setDmData(null);
+        return;
+      }
+
+      try {
+        setDmLoading(true);
+        setDmError('');
+        const response = await fetch(
+          `${process.env.EXPO_PUBLIC_API_URL}/partidos/${id_partido}/data_mining`
+        );
+
+        if (!response.ok) {
+          throw new Error('No se pudo cargar data mining');
+        }
+
+        const data = await response.json();
+        setDmData(data);
+      } catch (_e) {
+        setDmData(null);
+        setDmError('No se pudieron cargar las predicciones');
+      } finally {
+        setDmLoading(false);
+      }
+    };
+
+    cargarDataMining();
+  }, [id_partido]);
+
+  const normalizarPorcentaje = (valor) => {
+    const n = Number(valor);
+    if (!Number.isFinite(n)) return null;
+    return n <= 1 ? n * 100 : n;
+  };
+
+  const formatPorcentaje = (valor) => {
+    const pct = normalizarPorcentaje(valor);
+    if (pct === null) return '-';
+    return `${pct.toFixed(pct >= 10 ? 1 : 2)}%`;
+  };
+
+  const formatDecimal = (valor) => {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n.toFixed(2) : '-';
+  };
+
+  const prediccion = dmData?.prediccion || null;
+  const golesEsperados = dmData?.goles_esperados || null;
+  const probablesGoleadores = Array.isArray(dmData?.probables_goleadores)
+    ? dmData.probables_goleadores
+    : [];
+
+  const renderProbabilidadPartido = (label, valor, tipo) => (
+    <View style={[styles.prediccionCard, styles[`prediccionCard${tipo}`]]}>
+      <Text style={styles.prediccionLabel}>{label}</Text>
+      <Text style={styles.prediccionValue}>{formatPorcentaje(valor)}</Text>
+    </View>
+  );
+
   return (
     <ScrollView contentContainerStyle={styles.screenContent}>
       <View style={styles.formaContainer}>
@@ -189,6 +253,115 @@ export default function PreviaTab({ route, navigation }) {
             )}
           </View>
         </View>
+      </View>
+
+      <View style={styles.dmContainer}>
+        <Text style={styles.h2hTitle}>Predicciones </Text>
+
+        {dmLoading ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>Cargando predicciones...</Text>
+          </View>
+        ) : dmError ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>{dmError}</Text>
+          </View>
+        ) : !prediccion && !golesEsperados && probablesGoleadores.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateText}>No hay datos de data mining para este partido</Text>
+          </View>
+        ) : (
+          <>
+            <View style={styles.dmBlock}>
+              <Text style={styles.dmBlockTitle}>Prediccion del partido</Text>
+              <View style={styles.prediccionesRow}>
+                {renderProbabilidadPartido(
+                  partidoInfo?.equipo_local || 'Local',
+                  prediccion?.prob_victoria_local,
+                  'Local'
+                )}
+                {renderProbabilidadPartido('Empate', prediccion?.prob_empate, 'Empate')}
+                {renderProbabilidadPartido(
+                  partidoInfo?.equipo_visitante || 'Visitante',
+                  prediccion?.prob_victoria_visitante,
+                  'Visitante'
+                )}
+              </View>
+              {prediccion?.prediccion ? (
+                <Text style={styles.prediccionFinal}>
+                  Resultado previsto: {prediccion.prediccion}
+                </Text>
+              ) : null}
+            </View>
+
+            <View style={styles.dmBlock}>
+              <Text style={styles.dmBlockTitle}>Goles esperados</Text>
+              <View style={styles.xgRow}>
+                <View style={styles.xgEquipo}>
+                  <Image source={{ uri: partidoInfo?.logo_local }} style={styles.xgLogo} />
+                  <Text style={styles.xgEquipoNombre} numberOfLines={1}>
+                    {partidoInfo?.equipo_local || 'Local'}
+                  </Text>
+                  <Text style={styles.xgValor}>
+                    {formatDecimal(golesEsperados?.goles_local_esperados)}
+                  </Text>
+                </View>
+                <View style={styles.xgCenter}>
+                  <Text style={styles.xgMarcador}>
+                    {golesEsperados?.marcador_estimado || '-'}
+                  </Text>
+                  <Text style={styles.xgSubtext}>
+                    {golesEsperados?.resultado_estimado || 'Estimacion'}
+                  </Text>
+                </View>
+                <View style={styles.xgEquipo}>
+                  <Image source={{ uri: partidoInfo?.logo_visitante }} style={styles.xgLogo} />
+                  <Text style={styles.xgEquipoNombre} numberOfLines={1}>
+                    {partidoInfo?.equipo_visitante || 'Visitante'}
+                  </Text>
+                  <Text style={styles.xgValor}>
+                    {formatDecimal(golesEsperados?.goles_visitante_esperados)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.dmBlock}>
+              <Text style={styles.dmBlockTitle}>Probables goleadores</Text>
+              {probablesGoleadores.length === 0 ? (
+                <Text style={styles.dmEmptyText}>Sin goleadores probables</Text>
+              ) : (
+                <View style={styles.goleadoresGrid}>
+                  {probablesGoleadores.map((jugador) => (
+                    <TouchableOpacity
+                      key={`${jugador.id_partido}-${jugador.id_jugador}`}
+                      style={styles.goleadorCard}
+                      activeOpacity={0.85}
+                      onPress={() => IrDetallesJugador(jugador.id_jugador)}
+                    >
+                      {jugador.foto ? (
+                        <Image source={{ uri: jugador.foto }} style={styles.goleadorFoto} />
+                      ) : (
+                        <View style={styles.goleadorFotoFallback} />
+                      )}
+                      <View style={styles.goleadorInfo}>
+                        <Text style={styles.goleadorNombre} numberOfLines={1}>
+                          {jugador.nombre_jugador || '-'}
+                        </Text>
+                        <Text style={styles.goleadorEquipo} numberOfLines={1}>
+                          {jugador.nombre_equipo || '-'}
+                        </Text>
+                      </View>
+                      <Text style={styles.goleadorProb}>
+                        {formatPorcentaje(jugador.probabilidad)}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
       </View>
 
       <View style={styles.h2hContainer}>
@@ -388,6 +561,171 @@ const styles = StyleSheet.create({
     borderColor: '#c5d8ea',
     paddingVertical: 12,
     paddingHorizontal: 10,
+  },
+  dmContainer: {
+    backgroundColor: '#e9f1f8',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#c5d8ea',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+  },
+  dmBlock: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#d9e5f0',
+    padding: 10,
+    marginBottom: 10,
+  },
+  dmBlockTitle: {
+    color: '#16324a',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 8,
+  },
+  prediccionesRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  prediccionCard: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 9,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  prediccionCardLocal: {
+    backgroundColor: '#eaf3ff',
+    borderColor: '#c8ddf4',
+  },
+  prediccionCardEmpate: {
+    backgroundColor: '#f7f8fb',
+    borderColor: '#d9e2ec',
+  },
+  prediccionCardVisitante: {
+    backgroundColor: '#fff0ea',
+    borderColor: '#f1d1c3',
+  },
+  prediccionLabel: {
+    color: '#567087',
+    fontSize: 10,
+    fontWeight: '800',
+    textAlign: 'center',
+    minHeight: 24,
+  },
+  prediccionValue: {
+    color: '#103a5d',
+    fontSize: 16,
+    fontWeight: '900',
+    marginTop: 3,
+  },
+  prediccionFinal: {
+    marginTop: 8,
+    color: '#244c70',
+    fontSize: 12,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  xgRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  xgEquipo: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  xgLogo: {
+    width: 34,
+    height: 34,
+    resizeMode: 'contain',
+    marginBottom: 5,
+  },
+  xgEquipoNombre: {
+    color: '#4f6b83',
+    fontSize: 11,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  xgValor: {
+    color: '#103a5d',
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 3,
+  },
+  xgCenter: {
+    width: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  xgMarcador: {
+    color: '#e20613',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  xgSubtext: {
+    color: '#59778f',
+    fontSize: 10,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 2,
+  },
+  goleadoresGrid: {
+    gap: 8,
+  },
+  goleadorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fbff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#edf3f8',
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+  },
+  goleadorFoto: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#e7eef6',
+  },
+  goleadorFotoFallback: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#e7eef6',
+  },
+  goleadorInfo: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  goleadorNombre: {
+    color: '#1d3850',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  goleadorEquipo: {
+    color: '#6b829b',
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  goleadorProb: {
+    color: '#103a5d',
+    fontSize: 13,
+    fontWeight: '900',
+    marginLeft: 8,
+  },
+  dmEmptyText: {
+    color: '#59778f',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    paddingVertical: 8,
   },
   h2hTitle: {
     fontSize: 15,

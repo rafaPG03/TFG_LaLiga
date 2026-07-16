@@ -14,6 +14,7 @@ import TemporadaScreen from './src/screens/TemporadaScreen';
 import EquiposScreen from './src/screens/EquiposScreen';
 import JugadoresScreen from './src/screens/JugadoresScreen';
 import PartidosScreen from './src/screens/PartidosScreen';
+import SimulacionTemporadaScreen from './src/screens/SimulacionTemporadaScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
 import DetalleEquipoScreen from './src/screens/DetalleEquipoScreen';
 import DetalleJugadorScreen from './src/screens/DetalleJugadorScreen';  
@@ -21,6 +22,7 @@ import DetallePartidoScreen from './src/screens/DetallePartidoScreen';
 import DetalleTemporadaScreen from './src/screens/DetalleTemporadaScreen';
 import PerfilScreen from './src/screens/PerfilScreen';
 import EditPerfilScreen from './src/screens/EditPerfilScreen';
+import CambiarContrasenaScreen from './src/screens/CambiarContraseñaScreen';
 import CustomDrawer from './src/components/menu';
 import AgenteDeOro from './src/components/agente/AgenteDeOro';
 import { FavoritosProvider } from './src/context/FavoritosContext';
@@ -38,6 +40,7 @@ const AGENTE_ROUTES_PERMITIDAS = new Set([
   'DetalleJugador',
   'Partidos',
   'DetallePartido',
+  'SimulacionTemporada',
 ]);
 
 const obtenerRutaActiva = (state) => {
@@ -74,9 +77,11 @@ function DrawerNavigator() {
       <Drawer.Screen name="DetalleJugador" component={DetalleJugadorScreen} />
       <Drawer.Screen name="Partidos" component={PartidosScreen} />
       <Drawer.Screen name="DetallePartido" component={DetallePartidoScreen} />
+      <Drawer.Screen name="SimulacionTemporada" component={SimulacionTemporadaScreen} />
       <Drawer.Screen name="Ajustes" component={AjustesScreen} />
       <Drawer.Screen name="Perfil" component={PerfilScreen} />
       <Drawer.Screen name="EditPerfil" component={EditPerfilScreen} />
+      <Drawer.Screen name="CambiarContraseña" component={CambiarContrasenaScreen} />
     </Drawer.Navigator>
   );
 }

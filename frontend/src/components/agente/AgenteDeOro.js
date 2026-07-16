@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -13,18 +14,17 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const MENSAJES_INICIALES = [
-  {
-    id: 'welcome',
-    role: 'assistant',
-    text: 'Hola, soy Agente de Oro. Preguntame por equipos, jugadores, partidos o rankings.',
-  },
-  {
-    id: 'hint',
-    role: 'assistant',
-    text: 'Esta es solo la fachada visual. En la siguiente fase conectaremos Gemini y la base de datos.',
-  },
-];
+const MENSAJE_BIENVENIDA = {
+  id: 'welcome',
+  role: 'assistant',
+  text: 'Hola, soy Agente de Oro. Preguntame por equipos, jugadores, partidos o rankings.',
+};
+
+const MENSAJE_HINT = {
+  id: 'hint',
+  role: 'assistant',
+  text: 'Puedo convertir tu consulta en datos de la liga y devolvertelo de forma clara.',
+};
 
 const SUGERENCIAS = [
   'Top goleadores de la temporada 2024',
@@ -32,12 +32,123 @@ const SUGERENCIAS = [
   'Ultimos partidos del Madrid',
 ];
 
+const API_BASE = process.env.EXPO_PUBLIC_API_URL;
+
+const crearId = (prefijo) => `${prefijo}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
 export default function AgenteDeOro({ visible = true }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [texto, setTexto] = useState('');
+  const [mensajes, setMensajes] = useState([MENSAJE_BIENVENIDA, MENSAJE_HINT]);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
+  const scrollViewRef = useRef(null);
 
   const abrir = () => setModalVisible(true);
-  const cerrar = () => setModalVisible(false);
+
+  const cerrar = () => {
+    setModalVisible(false);
+    setError('');
+  };
+
+  useEffect(() => {
+    if (!modalVisible) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd?.({ animated: false });
+    });
+  }, [modalVisible]);
+
+  useEffect(() => {
+    if (!modalVisible) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      scrollViewRef.current?.scrollToEnd?.({ animated: true });
+    });
+  }, [mensajes, modalVisible]);
+
+  const puedeEnviar = useMemo(() => {
+    return texto.trim().length > 0 && !cargando;
+  }, [texto, cargando]);
+
+  const enviarPregunta = async () => {
+    const pregunta = texto.trim();
+
+    if (!pregunta || cargando) {
+      return;
+    }
+
+    const mensajeUsuario = {
+      id: crearId('user'),
+      role: 'user',
+      text: pregunta,
+    };
+
+    setMensajes((prev) => [...prev, mensajeUsuario]);
+    setTexto('');
+    setError('');
+    setCargando(true);
+
+    try {
+      if (!API_BASE) {
+        throw new Error('API base no configurada');
+      }
+
+      const response = await fetch(`${API_BASE}/chatbot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ pregunta }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'No se pudo obtener respuesta');
+      }
+
+      const respuestaTexto = typeof data?.respuesta === 'string'
+        ? data.respuesta
+        : data?.respuesta
+          ? JSON.stringify(data.respuesta)
+          : data?.mensaje || 'No he podido generar una respuesta.';
+
+      setMensajes((prev) => [
+        ...prev,
+        {
+          id: crearId('assistant'),
+          role: 'assistant',
+          text: respuestaTexto,
+        },
+      ]);
+    } catch (err) {
+      const errorText = err?.message || 'Error de conexion con el agente';
+      setError(errorText);
+      setMensajes((prev) => [
+        ...prev,
+        {
+          id: crearId('error'),
+          role: 'assistant',
+          text: 'Ahora mismo no puedo responder. Intentalo de nuevo en unos segundos.',
+        },
+      ]);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const usarSugerencia = (sugerencia) => {
+    if (cargando) {
+      return;
+    }
+
+    setTexto(sugerencia);
+  };
 
   if (!visible) {
     return null;
@@ -99,11 +210,15 @@ export default function AgenteDeOro({ visible = true }) {
 
               <View style={styles.body}>
                 <ScrollView
+                  ref={scrollViewRef}
                   style={styles.messagesList}
                   contentContainerStyle={styles.messagesContent}
                   showsVerticalScrollIndicator={false}
+                  onContentSizeChange={() => {
+                    scrollViewRef.current?.scrollToEnd?.({ animated: true });
+                  }}
                 >
-                  {MENSAJES_INICIALES.map((mensaje) => (
+                  {mensajes.map((mensaje) => (
                     <View
                       key={mensaje.id}
                       style={[
@@ -137,9 +252,15 @@ export default function AgenteDeOro({ visible = true }) {
                     <Text style={styles.suggestionsTitle}>Sugerencias</Text>
                     <View style={styles.suggestionsWrap}>
                       {SUGERENCIAS.map((item) => (
-                        <View key={item} style={styles.suggestionChip}>
+                        <TouchableOpacity
+                          key={item}
+                          style={styles.suggestionChip}
+                          onPress={() => usarSugerencia(item)}
+                          activeOpacity={0.82}
+                          disabled={cargando}
+                        >
                           <Text style={styles.suggestionText}>{item}</Text>
-                        </View>
+                        </TouchableOpacity>
                       ))}
                     </View>
                   </View>
@@ -155,17 +276,26 @@ export default function AgenteDeOro({ visible = true }) {
                       onChangeText={setTexto}
                       multiline
                       textAlignVertical="top"
+                      editable={!cargando}
                     />
                     <TouchableOpacity
-                      style={styles.sendButtonDisabled}
-                      activeOpacity={1}
-                      disabled
+                      style={[styles.sendButton, !puedeEnviar && styles.sendButtonDisabled]}
+                      activeOpacity={0.85}
+                      onPress={enviarPregunta}
+                      disabled={!puedeEnviar}
                     >
-                      <Ionicons name="send" size={17} color="#fff3ce" />
+                      {cargando ? (
+                        <ActivityIndicator size="small" color="#fff3ce" />
+                      ) : (
+                        <Ionicons name="send" size={17} color="#fff3ce" />
+                      )}
                     </TouchableOpacity>
                   </View>
+
+                  {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
                   <Text style={styles.composerNote}>
-                    La versión funcional llegará en la siguiente fase.
+                    Gemini respondera con datos reales de tu base de datos.
                   </Text>
                 </View>
               </View>
@@ -368,14 +498,23 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingRight: 10,
   },
-  sendButtonDisabled: {
+  sendButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#d8b04b',
-    opacity: 0.6,
+  },
+  sendButtonDisabled: {
+    opacity: 0.55,
+  },
+  errorText: {
+    marginTop: 8,
+    color: '#a6452d',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   composerNote: {
     marginTop: 8,

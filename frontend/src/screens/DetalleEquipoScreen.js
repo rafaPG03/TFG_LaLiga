@@ -156,7 +156,7 @@ export default function DetalleEquipoScreen({ navigation, route }) {
           tabBarActiveTintColor: "#12233f",
           tabBarInactiveTintColor: "#6f8096",
           tabBarStyle: { backgroundColor: "#ffffff" },
-          tabBarItemStyle: { width: 140, paddingHorizontal: 12 },
+          tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
           tabBarScrollEnabled: true,
           lazy: true,
         }}

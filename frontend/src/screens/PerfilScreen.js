@@ -143,7 +143,15 @@ export default function PerfilScreen({navigation, route}) {
                   <Ionicons name="pencil-outline" size={20} color="#1f6fa7" />
                   <Text style={styles.opcionTexto}>Editar perfil</Text>
                </TouchableOpacity>
-               <TouchableOpacity style={styles.opcionItem} activeOpacity={0.8}>
+               <TouchableOpacity
+                  style={styles.opcionItem}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                     navigation.navigate('CambiarContraseña', {
+                        usuarioId,
+                     })
+                  }
+               >
                   <Ionicons name="shield-outline" size={20} color="#1f6fa7" />
                   <Text style={styles.opcionTexto}>Cambiar contraseña</Text>
                </TouchableOpacity>

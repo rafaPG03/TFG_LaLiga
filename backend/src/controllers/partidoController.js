@@ -323,6 +323,81 @@ const getEstadoActualPartido = async (req, res) => {
     }
 };
 
+const getDataMiningPartido = async (req, res) => {
+  const { id_partido } = req.params;
+  const partidoId = Number(id_partido);
+
+  if (!Number.isInteger(partidoId)) {
+    return res.status(400).json({ error: "id_partido invÃ¡lido" });
+  }
+
+  try {
+    const prediccionQuery = `
+      SELECT
+        p.id_partido,
+        p.id_local,
+        p.nombre_local,
+        p.id_visitante,
+        p.nombre_visitante,
+        p.prob_victoria_local,
+        p.prob_empate,
+        p.prob_victoria_visitante,
+        p.prediccion
+      FROM dm_prediccion_partidos p
+      WHERE p.id_partido = $1;
+    `;
+
+    const golesEsperadosQuery = `
+      SELECT
+        g.id_partido,
+        g.id_local,
+        g.nombre_local,
+        g.id_visitante,
+        g.nombre_visitante,
+        g.goles_local_esperados,
+        g.goles_visitante_esperados,
+        g.diferencia_goles_esperada,
+        g.resultado_estimado,
+        g.marcador_estimado
+      FROM dm_golesesperados_partidos g
+      WHERE g.id_partido = $1;
+    `;
+
+    const goleadoresQuery = `
+      SELECT
+        g.id_partido,
+        g.id_equipo,
+        g.id_jugador,
+        g.nombre_jugador,
+        g.probabilidad,
+        j.foto,
+        e.nombre_equipo,
+        e.logo AS logo_equipo
+      FROM dm_probables_goleadores g
+      LEFT JOIN dim_jugador j ON j.id_jugador = g.id_jugador
+      LEFT JOIN dim_equipo e ON e.id_equipo = g.id_equipo
+      WHERE g.id_partido = $1
+      ORDER BY g.probabilidad DESC NULLS LAST, g.nombre_jugador ASC
+      LIMIT 8;
+    `;
+
+    const [prediccionResult, golesResult, goleadoresResult] = await Promise.all([
+      pool.query(prediccionQuery, [partidoId]),
+      pool.query(golesEsperadosQuery, [partidoId]),
+      pool.query(goleadoresQuery, [partidoId]),
+    ]);
+
+    res.json({
+      prediccion: prediccionResult.rows[0] || null,
+      goles_esperados: golesResult.rows[0] || null,
+      probables_goleadores: goleadoresResult.rows || [],
+    });
+  } catch (err) {
+    console.error("Error al obtener data mining del partido:", err);
+    res.status(500).json({ error: "Error al obtener data mining del partido" });
+  }
+};
+
 const getInfoPartido = async (req, res) => {
   const { id_partido } = req.params;
   const partidoId = Number(id_partido);
@@ -566,4 +641,4 @@ const getStatsJugadoresPartido = async (req, res) => {
 
 
 
-module.exports = { getPartidoFecha, getJornadasPorTemporada, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getInfoPartido, getEventosPartido, getAlineacionesPartido, getStatsEquipoPartido, getStatsJugadoresPartido };
+module.exports = { getPartidoFecha, getJornadasPorTemporada, getPartidosEntreEquipos, getJugadoresDestacadosPartido, getEstadoActualPartido, getDataMiningPartido, getInfoPartido, getEventosPartido, getAlineacionesPartido, getStatsEquipoPartido, getStatsJugadoresPartido };

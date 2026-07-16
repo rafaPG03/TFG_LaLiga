@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg from "react-native-svg";
+import Svg, { Circle, G, Image as SvgImage } from "react-native-svg";
 import {
   VictoryAxis,
   VictoryBar,
@@ -23,6 +24,7 @@ import {
 
 const TODOS = "TODOS";
 const CHART_HEIGHT = 260;
+const MINUTOS_RENDIMIENTO = 1250;
 const COLORS = {
   red: "#e20613",
   blue: "#1f6fa7",
@@ -126,6 +128,39 @@ const uniqueById = (items, idKey) => {
   });
 };
 
+const TeamLogoLabel = ({ x, y, datum, selectedEquipoId }) => {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+  const isSelected = String(datum?.id_equipo) === String(selectedEquipoId);
+  const isDimmed = selectedEquipoId !== TODOS && !isSelected;
+  const size = isSelected ? 18 : 12;
+  const radius = size / 2;
+  const logo = datum?.logo ? { uri: datum.logo } : null;
+  const centerY = y - (isSelected ? 18 : 14);
+
+  return (
+    <G opacity={isDimmed ? 0.28 : 0.95}>
+      {logo ? (
+        <SvgImage
+          x={x - radius}
+          y={centerY - radius}
+          width={size}
+          height={size}
+          href={logo}
+          preserveAspectRatio="xMidYMid meet"
+        />
+      ) : (
+        <Circle
+          cx={x}
+          cy={centerY}
+          r={radius}
+          fill={isSelected ? COLORS.gold : COLORS.blue}
+        />
+      )}
+    </G>
+  );
+};
+
 const ChartShell = ({ width, height, children }) => (
   <View style={[styles.chartBox, { width, height }]}>
     <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -150,6 +185,8 @@ export default function GraficosTemporada({ temporada }) {
   });
   const [selectedEquipoId, setSelectedEquipoId] = useState(TODOS);
   const [selectorVisible, setSelectorVisible] = useState(false);
+  const [performanceDetailsVisible, setPerformanceDetailsVisible] =
+    useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
@@ -400,21 +437,72 @@ export default function GraficosTemporada({ temporada }) {
 
   const jugadoresRendimiento = useMemo(() => {
     const candidatos = jugadoresContextoElegibles.filter(
-      (jugador) => jugador.minutos > 400 && jugador.nota_media > 0,
+      (jugador) => jugador.nota_media > 0,
     );
-    const mejores = [...candidatos]
-      .sort((a, b) => b.nota_media - a.nota_media)
-      .slice(0, 20);
-    const peores = [...candidatos]
-      .sort((a, b) => a.nota_media - b.nota_media)
-      .slice(0, 20);
 
-    return uniqueById([...mejores, ...peores], "id_jugador").map((jugador) => ({
-      ...jugador,
-      x: jugador.minutos,
-      y: jugador.nota_media,
-    }));
+    const jugadoresConMuchosMinutos = candidatos.filter(
+      (jugador) => jugador.minutos >= MINUTOS_RENDIMIENTO,
+    );
+    const jugadoresConMenosMinutos = candidatos.filter(
+      (jugador) => jugador.minutos < MINUTOS_RENDIMIENTO,
+    );
+
+    const mejoresMuchosMinutos = [...jugadoresConMuchosMinutos]
+      .sort((a, b) => b.nota_media - a.nota_media)
+      .slice(0, 10)
+      .map((jugador) => ({
+        ...jugador,
+        grupo_rendimiento: "mejores_muchos_minutos",
+      }));
+    const mejoresMenosMinutos = [...jugadoresConMenosMinutos]
+      .sort((a, b) => b.nota_media - a.nota_media)
+      .slice(0, 10)
+      .map((jugador) => ({
+        ...jugador,
+        grupo_rendimiento: "mejores_menos_minutos",
+      }));
+    const peoresMuchosMinutos = [...jugadoresConMuchosMinutos]
+      .sort((a, b) => a.nota_media - b.nota_media)
+      .slice(0, 10)
+      .map((jugador) => ({
+        ...jugador,
+        grupo_rendimiento: "peores_muchos_minutos",
+      }));
+
+    return [
+      {
+        key: "mejores_muchos_minutos",
+        title: `10 mejores medias - ${MINUTOS_RENDIMIENTO}+ minutos`,
+        color: COLORS.green,
+        jugadores: mejoresMuchosMinutos,
+      },
+      {
+        key: "mejores_menos_minutos",
+        title: `10 mejores medias - menos de ${MINUTOS_RENDIMIENTO} minutos`,
+        color: COLORS.gold,
+        jugadores: mejoresMenosMinutos,
+      },
+      {
+        key: "peores_muchos_minutos",
+        title: `10 peores medias - ${MINUTOS_RENDIMIENTO}+ minutos`,
+        color: COLORS.red,
+        jugadores: peoresMuchosMinutos,
+      },
+    ];
   }, [jugadoresContextoElegibles]);
+
+  const jugadoresRendimientoScatter = useMemo(
+    () =>
+      uniqueById(
+        jugadoresRendimiento.flatMap((grupo) => grupo.jugadores),
+        "id_jugador",
+      ).map((jugador) => ({
+        ...jugador,
+        x: jugador.minutos,
+        y: jugador.nota_media,
+      })),
+    [jugadoresRendimiento],
+  );
 
   const defensasTop = useMemo(
     () =>
@@ -580,6 +668,33 @@ export default function GraficosTemporada({ temporada }) {
     </View>
   );
 
+  const renderSelectorLogo = (equipo, active = false) => {
+    if (equipo?.logo) {
+      return (
+        <Image
+          source={{ uri: equipo.logo }}
+          style={styles.selectorLogo}
+          resizeMode="contain"
+        />
+      );
+    }
+
+    return (
+      <View
+        style={[
+          styles.selectorLogoFallback,
+          active && styles.selectorLogoFallbackActive,
+        ]}
+      >
+        <Ionicons
+          name="shield-outline"
+          size={15}
+          color={active ? COLORS.blue : COLORS.muted}
+        />
+      </View>
+    );
+  };
+
   const renderTeamQuadrant = () => {
     if (scatterEquipos.length === 0) {
       return renderEmptyChart("No hay equipos para mostrar");
@@ -648,25 +763,8 @@ export default function GraficosTemporada({ temporada }) {
           <VictoryScatter
             data={scatterEquipos}
             size={0}
-            labels={({ datum }) =>
-              selectedEquipoId === TODOS ||
-              String(datum.id_equipo) === String(selectedEquipoId)
-                ? truncateLabel(
-                    datum.nombre,
-                    selectedEquipoId === TODOS ? 8 : 18,
-                  )
-                : ""
-            }
-            labelComponent={
-              <VictoryLabel
-                dy={-9}
-                textAnchor="middle"
-                style={{
-                  fill: COLORS.text,
-                  fontSize: selectedEquipoId === TODOS ? 8 : 11,
-                  fontWeight: "700",
-                }}
-              />
+            dataComponent={
+              <TeamLogoLabel selectedEquipoId={selectedEquipoId} />
             }
           />
         </VictoryChart>
@@ -674,50 +772,131 @@ export default function GraficosTemporada({ temporada }) {
     );
   };
 
+  const renderPerformanceDetails = () => (
+    <View style={styles.performanceDetails}>
+      <TouchableOpacity
+        style={styles.performanceToggle}
+        onPress={() => setPerformanceDetailsVisible((visible) => !visible)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.performanceToggleText}>
+          {performanceDetailsVisible
+            ? "Ocultar detalle de jugadores"
+            : "Ver detalle de jugadores"}
+        </Text>
+        <Ionicons
+          name={performanceDetailsVisible ? "chevron-up" : "chevron-down"}
+          size={16}
+          color={COLORS.blue}
+        />
+      </TouchableOpacity>
+
+      {performanceDetailsVisible
+        ? jugadoresRendimiento.map((grupo) => (
+            <View key={grupo.key} style={styles.performanceGroup}>
+              <View style={styles.performanceGroupHeader}>
+                <View
+                  style={[
+                    styles.performanceGroupDot,
+                    { backgroundColor: grupo.color },
+                  ]}
+                />
+                <Text style={styles.performanceGroupTitle}>{grupo.title}</Text>
+              </View>
+              {grupo.jugadores.length > 0 ? (
+                grupo.jugadores.map((jugador) => (
+                  <View
+                    key={`${grupo.key}-${jugador.id_jugador}`}
+                    style={styles.performanceRow}
+                  >
+                    <Text style={styles.performanceInitials}>
+                      {getInitials(jugador.nombre)}
+                    </Text>
+                    <Text style={styles.performanceName} numberOfLines={1}>
+                      {jugador.nombre}
+                    </Text>
+                    <Text style={styles.performanceMeta}>
+                      {formatNumber(jugador.nota_media, 2)} -{" "}
+                      {formatNumber(jugador.minutos)} min
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.performanceEmpty}>
+                  No hay jugadores en esta seccion
+                </Text>
+              )}
+            </View>
+          ))
+        : null}
+    </View>
+  );
+
   const renderPlayerPerformance = () => {
-    if (jugadoresRendimiento.length === 0) {
-      return renderEmptyChart("No hay jugadores con mas de 400 minutos");
+    if (jugadoresRendimientoScatter.length === 0) {
+      return renderEmptyChart(
+        `No hay jugadores para mostrar con el corte de ${MINUTOS_RENDIMIENTO} minutos`,
+      );
     }
 
-    const maxMinutos = getMaxValue(jugadoresRendimiento, "minutos", 1000) + 150;
+    const colorPorGrupo = jugadoresRendimiento.reduce((acc, grupo) => {
+      acc[grupo.key] = grupo.color;
+      return acc;
+    }, {});
+    const maxMinutos =
+      getMaxValue(jugadoresRendimientoScatter, "minutos", 1000) + 150;
     const minNota = Math.max(
       4.5,
-      Math.min(...jugadoresRendimiento.map((jugador) => jugador.nota_media)) -
-        0.25,
+      Math.min(
+        ...jugadoresRendimientoScatter.map((jugador) => jugador.nota_media),
+      ) - 0.25,
     );
     const maxNota = 10;
     const fullDomain = { x: [0, maxMinutos], y: [minNota, maxNota] };
 
     return (
-      <ChartShell width={chartWidth} height={CHART_HEIGHT}>
-        <VictoryChart
-          standalone={false}
-          width={chartWidth}
-          height={CHART_HEIGHT}
-          padding={{ top: 18, left: 48, right: 24, bottom: 46 }}
-          domain={fullDomain}
-        >
-          <VictoryAxis label="Minutos" style={axisStyle} />
-          <VictoryAxis dependentAxis label="Nota media" style={axisStyle} />
-          <VictoryScatter
-            data={jugadoresRendimiento}
-            size={4}
-            style={{ data: { fill: COLORS.red, opacity: 0.72 } }}
-          />
-          <VictoryScatter
-            data={jugadoresRendimiento}
-            size={0}
-            labels={({ datum }) => truncateLabel(datum.nombre, 13)}
-            labelComponent={
-              <VictoryLabel
-                dy={-7}
-                textAnchor="middle"
-                style={{ fill: COLORS.text, fontSize: 7, fontWeight: "700" }}
-              />
-            }
-          />
-        </VictoryChart>
-      </ChartShell>
+      <>
+        <ChartShell width={chartWidth} height={CHART_HEIGHT}>
+          <VictoryChart
+            standalone={false}
+            width={chartWidth}
+            height={CHART_HEIGHT}
+            padding={{ top: 18, left: 48, right: 24, bottom: 46 }}
+            domain={fullDomain}
+          >
+            <VictoryAxis label="Minutos" style={axisStyle} />
+            <VictoryAxis dependentAxis label="Nota media" style={axisStyle} />
+            <VictoryScatter
+              data={jugadoresRendimientoScatter}
+              size={5}
+              style={{
+                data: {
+                  fill: ({ datum }) =>
+                    colorPorGrupo[datum.grupo_rendimiento] || COLORS.red,
+                  opacity: 0.82,
+                },
+              }}
+            />
+            <VictoryScatter
+              data={jugadoresRendimientoScatter}
+              size={0}
+              labels={({ datum }) => getInitials(datum.nombre)}
+              labelComponent={
+                <VictoryLabel
+                  dy={-8}
+                  textAnchor="middle"
+                  style={{
+                    fill: COLORS.text,
+                    fontSize: 8,
+                    fontWeight: "900",
+                  }}
+                />
+              }
+            />
+          </VictoryChart>
+        </ChartShell>
+        {renderPerformanceDetails()}
+      </>
     );
   };
 
@@ -893,7 +1072,10 @@ export default function GraficosTemporada({ temporada }) {
             onPress={() => setSelectorVisible(true)}
             activeOpacity={0.85}
           >
-            <Ionicons name="shield-outline" size={16} color={COLORS.blue} />
+            {renderSelectorLogo(
+              selectedEquipoId === TODOS ? null : selectedEquipo,
+              true,
+            )}
             <Text style={styles.selectorText} numberOfLines={1}>
               {selectedLabel}
             </Text>
@@ -914,7 +1096,7 @@ export default function GraficosTemporada({ temporada }) {
         )}
         {renderSection(
           "Rendimiento de jugadores",
-          `20 mejores y 20 peores por nota media - ${eligibilityText}`,
+          `Top/bottom por nota media y corte de ${MINUTOS_RENDIMIENTO} minutos - ${eligibilityText}`,
           renderPlayerPerformance(),
         )}
         {renderSection(
@@ -977,6 +1159,7 @@ export default function GraficosTemporada({ temporada }) {
                 ]}
                 onPress={() => selectEquipo(TODOS)}
               >
+                {renderSelectorLogo(null, selectedEquipoId === TODOS)}
                 <Text
                   style={[
                     styles.modalOptionText,
@@ -996,6 +1179,10 @@ export default function GraficosTemporada({ temporada }) {
                   ]}
                   onPress={() => selectEquipo(equipo.id_equipo)}
                 >
+                  {renderSelectorLogo(
+                    equipo,
+                    String(equipo.id_equipo) === String(selectedEquipoId),
+                  )}
                   <Text
                     style={[
                       styles.modalOptionText,
@@ -1071,6 +1258,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: COLORS.text,
+  },
+  selectorLogo: {
+    width: 24,
+    height: 24,
+  },
+  selectorLogoFallback: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#edf3f8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectorLogoFallbackActive: {
+    backgroundColor: COLORS.card,
   },
   section: {
     marginBottom: 18,
@@ -1203,6 +1405,81 @@ const styles = StyleSheet.create({
   chartBox: {
     alignSelf: "center",
     overflow: "hidden",
+  },
+  performanceDetails: {
+    marginTop: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
+    overflow: "hidden",
+  },
+  performanceToggle: {
+    minHeight: 40,
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f6f9fc",
+  },
+  performanceToggleText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  performanceGroup: {
+    borderTopWidth: 1,
+    borderTopColor: "#edf3f8",
+    paddingVertical: 8,
+  },
+  performanceGroupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
+    marginBottom: 4,
+  },
+  performanceGroupDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  performanceGroupTitle: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  performanceRow: {
+    minHeight: 32,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 10,
+  },
+  performanceInitials: {
+    width: 32,
+    color: COLORS.blue,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  performanceName: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  performanceMeta: {
+    color: COLORS.red,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  performanceEmpty: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: "700",
   },
   attackList: {
     marginTop: 8,
@@ -1347,7 +1624,9 @@ const styles = StyleSheet.create({
     minHeight: 44,
     borderRadius: 8,
     paddingHorizontal: 12,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
     marginTop: 8,
     backgroundColor: "#f6f9fc",
   },

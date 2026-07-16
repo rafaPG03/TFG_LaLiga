@@ -558,7 +558,7 @@ export default function AtributosJugador({ id_jugador, route }) {
                                             activeOpacity={0.85}
                                         >
                                             <Text style={styles.selectorTexto} numberOfLines={1}>
-                                                {atributoTemporadaSeleccionado?.label || 'Anadir atributo'}
+                                                {atributoTemporadaSeleccionado?.label || 'Añadir atributo'}
                                             </Text>
                                             <Ionicons
                                                 name={selectorTemporadaAbierto ? 'chevron-up' : 'chevron-down'}

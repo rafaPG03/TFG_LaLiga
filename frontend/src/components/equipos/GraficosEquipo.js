@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -41,6 +41,34 @@ const COLORS = {
 
 const CHART_HEIGHT = 250;
 
+const MONTECARLO_COLUMNS = [
+  {
+    key: "campeon_pct",
+    label: "Campeon",
+    palette: ["#fff8d8", "#ffe98a", "#ffd94d", "#f6c400"],
+  },
+  {
+    key: "champions_pct",
+    label: "Champions",
+    palette: ["#e6f1ff", "#b9dcff", "#76b7ff", "#2f8cff"],
+  },
+  {
+    key: "europa_pct",
+    label: "Europa",
+    palette: ["#fff0df", "#ffd5a8", "#ffad5c", "#f27a1a"],
+  },
+  {
+    key: "media_tabla_pct",
+    label: "Media",
+    palette: ["#e9f8ee", "#bcebc9", "#78d895", "#2fbf61"],
+  },
+  {
+    key: "descenso_pct",
+    label: "Descenso",
+    palette: ["#ffe9e9", "#ffc0c0", "#ff8181", "#e54848"],
+  },
+];
+
 const toNumber = (value) => {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
@@ -53,6 +81,21 @@ const splitTwoLines = (value) => {
     .filter(Boolean);
   if (parts.length <= 1) return parts[0] || "-";
   return `${parts[0]}\n${parts[parts.length - 1]}`;
+};
+
+const formatPct = (valor) => {
+  const n = Number(valor);
+  if (!Number.isFinite(n)) return "-";
+  return `${Number.isInteger(n) ? n : n.toFixed(1)}%`;
+};
+
+const getProbBackground = (valor, palette) => {
+  const pct = toNumber(valor);
+  if (pct <= 0) return COLORS.card;
+  if (pct < 25) return palette[0];
+  if (pct < 50) return palette[1];
+  if (pct < 75) return palette[2];
+  return palette[3];
 };
 
 const getResultColor = (resultado) => {
@@ -145,6 +188,8 @@ export default function GraficosEquipo({ id_equipo }) {
 
   const equipo = payload?.equipo ?? null;
   const clasificacionActual = payload?.clasificacion_actual ?? null;
+  const formaDm = payload?.forma_dm ?? null;
+  const montecarlo = payload?.montecarlo ?? null;
   const proximoPartido = payload?.proximo_partido ?? null;
   const posicionLinea = Array.isArray(payload?.posicion_linea)
     ? payload.posicion_linea
@@ -165,6 +210,13 @@ export default function GraficosEquipo({ id_equipo }) {
     duelos: 0,
     regates: 0,
   };
+  const fichajes = payload?.fichajes ?? {};
+  const necesidadesFichajes = Array.isArray(fichajes?.necesidades)
+    ? fichajes.necesidades
+    : [];
+  const recomendacionesFichajes = Array.isArray(fichajes?.recomendaciones)
+    ? fichajes.recomendaciones
+    : [];
   const temporada = payload?.temporada ?? null;
   const jornadaMaxima = payload?.jornada_maxima ?? null;
   const temporadaActiva = selectedTemporada ?? temporada;
@@ -250,6 +302,82 @@ export default function GraficosEquipo({ id_equipo }) {
     { label: "GC", local: resumenLocal.gc, visitante: resumenVisitante.gc },
   ];
 
+  const recomendacionesPorNecesidad = useMemo(
+    () =>
+      recomendacionesFichajes.reduce((acc, jugador) => {
+        const key = jugador?.necesidad || "Recomendaciones";
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(jugador);
+        return acc;
+      }, {}),
+    [recomendacionesFichajes],
+  );
+
+  const proximoPartidoInfo = useMemo(() => {
+    if (!proximoPartido) return null;
+
+    const esLocal = Number(proximoPartido.id_local) === Number(id_equipo);
+
+    return {
+      id_partido: proximoPartido.id_partido,
+      rival: esLocal
+        ? proximoPartido.equipo_visitante
+        : proximoPartido.equipo_local,
+      rivalLogo: esLocal
+        ? proximoPartido.logo_visitante
+        : proximoPartido.logo_local,
+      condicion: esLocal ? "Local" : "Visitante",
+      jornada: proximoPartido.jornada,
+      fecha: [proximoPartido.dia, proximoPartido.nombre_mes, proximoPartido.anio]
+        .filter(Boolean)
+        .join(" "),
+      hora: proximoPartido.hora,
+      local: proximoPartido.equipo_local,
+      visitante: proximoPartido.equipo_visitante,
+      logoLocal: proximoPartido.logo_local,
+      logoVisitante: proximoPartido.logo_visitante,
+    };
+  }, [id_equipo, proximoPartido]);
+
+  const formaTrend = useMemo(() => {
+    const estado = String(formaDm?.estado || "").toLowerCase();
+    const tendencia = toNumber(formaDm?.tendencia);
+
+    if (estado.includes("positivo")) {
+      return {
+        icon: "arrow-up",
+        color: COLORS.green,
+        label: formaDm?.estado || "Positivo",
+      };
+    }
+
+    if (estado.includes("critico") || estado.includes("crítico")) {
+      return {
+        icon: "arrow-down",
+        color: COLORS.red,
+        label: formaDm?.estado || "Critico",
+      };
+    }
+
+    if (estado.includes("estable")) {
+      return {
+        icon: "remove",
+        color: COLORS.orange,
+        label: formaDm?.estado || "Estable",
+      };
+    }
+
+    if (tendencia > 0) {
+      return { icon: "arrow-up", color: COLORS.green, label: "Sube" };
+    }
+
+    if (tendencia < 0) {
+      return { icon: "arrow-down", color: COLORS.red, label: "Baja" };
+    }
+
+    return { icon: "remove", color: COLORS.orange, label: "Estable" };
+  }, [formaDm]);
+
   const handleTemporadaPress = (temporadaElegida) => {
     const temporadaNum = Number(temporadaElegida);
     if (
@@ -271,15 +399,6 @@ export default function GraficosEquipo({ id_equipo }) {
         : "-",
     },
     { label: "Puntos", value: toNumber(clasificacionActual?.puntos) || "-" },
-    {
-      label: "Próximo rival",
-      value: proximoPartido
-        ? Number(proximoPartido.id_local) === Number(id_equipo)
-          ? proximoPartido.equipo_visitante
-          : proximoPartido.equipo_local
-        : "Sin dato",
-    },
-    { label: "Forma", value: clasificacionActual?.forma || "N/D" },
   ];
 
   const renderKpi = (item) => (
@@ -361,29 +480,141 @@ export default function GraficosEquipo({ id_equipo }) {
         </View>
 
         <View style={styles.formRow}>
-          <Text style={styles.formTitle}>Forma</Text>
-          <View style={styles.formBadges}>
-            {(clasificacionActual?.forma || "")
-              .split("")
-              .filter(Boolean)
-              .map((item, index) => (
-                <View
-                  key={`forma-${index}-${item}`}
-                  style={[
-                    styles.formBadge,
-                    item === "V" && styles.formBadgeWin,
-                    item === "E" && styles.formBadgeDraw,
-                    item === "D" && styles.formBadgeLoss,
-                  ]}
-                >
-                  <Text style={styles.formBadgeText}>{item}</Text>
-                </View>
-              ))}
+          <View style={styles.formMain}>
+            <Text style={styles.formTitle}>Forma</Text>
+            <View style={styles.formBadges}>
+              {(clasificacionActual?.forma || "")
+                .split("")
+                .filter(Boolean)
+                .map((item, index) => (
+                  <View
+                    key={`forma-${index}-${item}`}
+                    style={[
+                      styles.formBadge,
+                      item === "V" && styles.formBadgeWin,
+                      item === "E" && styles.formBadgeDraw,
+                      item === "D" && styles.formBadgeLoss,
+                    ]}
+                  >
+                    <Text style={styles.formBadgeText}>{item}</Text>
+                  </View>
+                ))}
+            </View>
           </View>
+          {formaDm ? (
+            <View
+              style={[
+                styles.formTrendBadge,
+                { borderColor: formaTrend.color },
+              ]}
+            >
+              <Ionicons
+                name={formaTrend.icon}
+                size={30}
+                color={formaTrend.color}
+              />
+              <Text style={[styles.formTrendText, { color: formaTrend.color }]}>
+                {formaTrend.label}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
       <View style={styles.kpiGrid}>{kpis.map(renderKpi)}</View>
+
+      <View style={styles.nextMatchCard}>
+        <View style={styles.nextMatchHeader}>
+          <Text style={styles.nextMatchLabel}>Proximo rival</Text>
+          {proximoPartidoInfo?.jornada ? (
+            <Text style={styles.nextMatchBadge}>
+              Jornada {proximoPartidoInfo.jornada}
+            </Text>
+          ) : null}
+        </View>
+        {proximoPartidoInfo ? (
+          <>
+            <TouchableOpacity
+              style={styles.nextMatchMain}
+              activeOpacity={0.85}
+              onPress={() =>
+                proximoPartidoInfo.id_partido &&
+                navigation.navigate("DetallePartido", {
+                  id_partido: proximoPartidoInfo.id_partido,
+                })
+              }
+            >
+              <View style={styles.nextTeam}>
+                {proximoPartidoInfo.logoLocal ? (
+                  <Image
+                    source={{ uri: proximoPartidoInfo.logoLocal }}
+                    style={styles.nextTeamLogo}
+                  />
+                ) : null}
+                <Text style={styles.nextTeamName} numberOfLines={2}>
+                  {proximoPartidoInfo.local || "-"}
+                </Text>
+              </View>
+              <View style={styles.nextCenter}>
+                <Text style={styles.nextVs}>VS</Text>
+                <Text style={styles.nextCondition}>
+                  {proximoPartidoInfo.condicion}
+                </Text>
+              </View>
+              <View style={styles.nextTeam}>
+                {proximoPartidoInfo.logoVisitante ? (
+                  <Image
+                    source={{ uri: proximoPartidoInfo.logoVisitante }}
+                    style={styles.nextTeamLogo}
+                  />
+                ) : null}
+                <Text style={styles.nextTeamName} numberOfLines={2}>
+                  {proximoPartidoInfo.visitante || "-"}
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <View style={styles.nextMatchMetaRow}>
+              <Text style={styles.nextMatchMeta}>
+                {proximoPartidoInfo.fecha || "Fecha no disponible"}
+              </Text>
+              <Text style={styles.nextMatchMeta}>
+                {proximoPartidoInfo.hora || "Hora no disponible"}
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Text style={styles.emptyText}>No hay proximo partido disponible.</Text>
+        )}
+      </View>
+
+      {montecarlo ? (
+        <View style={styles.montecarloRowCard}>
+          <Text style={styles.montecarloRowTitle}>Probabilidades</Text>
+          <View style={styles.montecarloProbRow}>
+            {MONTECARLO_COLUMNS.map((col) => (
+              <View
+                key={col.key}
+                style={[
+                  styles.montecarloProbCell,
+                  {
+                    backgroundColor: getProbBackground(
+                      montecarlo[col.key],
+                      col.palette,
+                    ),
+                  },
+                ]}
+              >
+                <Text style={styles.montecarloProbLabel} numberOfLines={1}>
+                  {col.label}
+                </Text>
+                <Text style={styles.montecarloProbValue}>
+                  {formatPct(montecarlo[col.key])}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Posición durante la temporada</Text>
@@ -693,17 +924,110 @@ export default function GraficosEquipo({ id_equipo }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Fichajes</Text>
-        <View style={styles.placeholderCard}>
-          <Ionicons
-            name="swap-horizontal-outline"
-            size={24}
-            color={COLORS.muted}
-          />
-          <Text style={styles.placeholderTitle}>Próximamente</Text>
-          <Text style={styles.placeholderText}>
-            Esta sección quedará lista cuando conectemos la fuente de fichajes.
+        <Text style={styles.sectionSubtitle}>
+          Necesidades detectadas por plantilla y recomendaciones disponibles
+          para la temporada actual.
+        </Text>
+
+        {necesidadesFichajes.length > 0 ? (
+          <View style={styles.needsList}>
+            {necesidadesFichajes.map((item, index) => (
+              <View
+                key={`need-${item.necesidad}-${index}`}
+                style={styles.needCard}
+              >
+                <View style={styles.needHeader}>
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={18}
+                    color={COLORS.orange}
+                  />
+                  <Text style={styles.needTitle}>{item.necesidad}</Text>
+                </View>
+                <Text style={styles.needReason}>{item.motivo || "-"}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.emptyText}>
+            No hay necesidades registradas para esta temporada.
           </Text>
-        </View>
+        )}
+
+        {fichajes.es_ultima_temporada ? (
+          recomendacionesFichajes.length > 0 ? (
+            <View style={styles.recommendationsWrap}>
+              <Text style={styles.recommendationsTitle}>
+                Recomendaciones de fichajes
+              </Text>
+              {Object.entries(recomendacionesPorNecesidad).map(
+                ([necesidad, jugadoresRecomendados]) => (
+                  <View key={`reco-${necesidad}`} style={styles.recoGroup}>
+                    <Text style={styles.recoGroupTitle}>{necesidad}</Text>
+                    {jugadoresRecomendados.map((jugador) => (
+                      <TouchableOpacity
+                        key={`reco-${necesidad}-${jugador.id_jugador}`}
+                        style={styles.recoCard}
+                        activeOpacity={0.85}
+                        onPress={() =>
+                          jugador.id_jugador &&
+                          navigation.navigate("DetalleJugador", {
+                            id_jugador: jugador.id_jugador,
+                          })
+                        }
+                      >
+                        {jugador.foto ? (
+                          <Image
+                            source={{ uri: jugador.foto }}
+                            style={styles.recoPhoto}
+                          />
+                        ) : (
+                          <View style={styles.recoPhotoFallback}>
+                            <Ionicons
+                              name="person-outline"
+                              size={18}
+                              color={COLORS.muted}
+                            />
+                          </View>
+                        )}
+                        <View style={styles.recoInfo}>
+                          <Text style={styles.recoName} numberOfLines={1}>
+                            {jugador.nombre_jugador || "-"}
+                          </Text>
+                          <Text style={styles.recoTeam} numberOfLines={1}>
+                            {jugador.equipo_actual ||
+                              "Equipo actual no disponible"}
+                          </Text>
+                          <Text style={styles.recoReason} numberOfLines={2}>
+                            {String(jugador.motivo || "").replace(/\*\*/g, "")}
+                          </Text>
+                        </View>
+                        <View style={styles.recoScore}>
+                          <Text style={styles.recoScoreLabel}>Score</Text>
+                          <Text style={styles.recoScoreValue}>
+                            {toNumber(jugador.score_recomendacion).toFixed(2)}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ),
+              )}
+            </View>
+          ) : (
+            <Text style={styles.emptyText}>
+              No hay recomendaciones de fichajes para este equipo.
+            </Text>
+          )
+        ) : (
+          <View style={styles.historicalNotice}>
+            <Ionicons name="time-outline" size={16} color={COLORS.muted} />
+            <Text style={styles.historicalNoticeText}>
+              Las recomendaciones de fichajes solo están disponibles para la
+              temporada actual.
+            </Text>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
@@ -821,12 +1145,36 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 12,
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  formMain: {
+    flex: 1,
+    justifyContent: "center",
   },
   formTitle: {
     color: COLORS.text,
     fontSize: 13,
     fontWeight: "800",
     marginBottom: 8,
+  },
+  formTrendBadge: {
+    width: 72,
+    minHeight: 66,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: "#f8fbfe",
+    paddingHorizontal: 6,
+    paddingVertical: 8,
+  },
+  formTrendText: {
+    marginTop: 3,
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center",
   },
   formBadges: {
     flexDirection: "row",
@@ -879,6 +1227,129 @@ const styles = StyleSheet.create({
     marginTop: 8,
     color: COLORS.text,
     fontSize: 18,
+    fontWeight: "900",
+  },
+  nextMatchCard: {
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 14,
+  },
+  nextMatchHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 10,
+  },
+  nextMatchLabel: {
+    color: COLORS.text,
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  nextMatchBadge: {
+    color: COLORS.blue,
+    fontSize: 11,
+    fontWeight: "900",
+    backgroundColor: "#e9f1f8",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  nextMatchMain: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#f8fbfe",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+  },
+  nextTeam: {
+    flex: 1,
+    alignItems: "center",
+  },
+  nextTeamLogo: {
+    width: 42,
+    height: 42,
+    resizeMode: "contain",
+    marginBottom: 6,
+  },
+  nextTeamName: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "center",
+    lineHeight: 16,
+  },
+  nextCenter: {
+    width: 70,
+    alignItems: "center",
+  },
+  nextVs: {
+    color: COLORS.red,
+    fontSize: 22,
+    fontWeight: "900",
+  },
+  nextCondition: {
+    marginTop: 2,
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: "800",
+  },
+  nextMatchMetaRow: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  nextMatchMeta: {
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  montecarloRowCard: {
+    marginTop: 12,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+  },
+  montecarloRowTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "900",
+    marginBottom: 9,
+  },
+  montecarloProbRow: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  montecarloProbCell: {
+    flex: 1,
+    minHeight: 54,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#eef3f7",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  montecarloProbLabel: {
+    color: COLORS.text,
+    fontSize: 9,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  montecarloProbValue: {
+    marginTop: 4,
+    color: COLORS.text,
+    fontSize: 12,
     fontWeight: "900",
   },
   section: {
@@ -1021,6 +1492,139 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontSize: 11,
     fontWeight: "700",
+  },
+  needsList: {
+    gap: 10,
+  },
+  needCard: {
+    backgroundColor: "#f8fbfe",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12,
+  },
+  needHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  needTitle: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  needReason: {
+    marginTop: 7,
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: "600",
+    lineHeight: 17,
+  },
+  recommendationsWrap: {
+    marginTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 12,
+  },
+  recommendationsTitle: {
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: "900",
+    marginBottom: 10,
+  },
+  recoGroup: {
+    marginBottom: 12,
+  },
+  recoGroupTitle: {
+    color: COLORS.blue,
+    fontSize: 13,
+    fontWeight: "900",
+    marginBottom: 8,
+  },
+  recoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fbfe",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 10,
+    marginBottom: 8,
+  },
+  recoPhoto: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#e7eef6",
+  },
+  recoPhotoFallback: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#e7eef6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recoInfo: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  recoName: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  recoTeam: {
+    marginTop: 2,
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  recoReason: {
+    marginTop: 4,
+    color: COLORS.muted,
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: "600",
+  },
+  recoScore: {
+    minWidth: 52,
+    alignItems: "center",
+    borderRadius: 12,
+    backgroundColor: "#e9f1f8",
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+    marginLeft: 8,
+  },
+  recoScoreLabel: {
+    color: COLORS.muted,
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  recoScoreValue: {
+    marginTop: 2,
+    color: COLORS.blue,
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  historicalNotice: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#f8fbfe",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 10,
+  },
+  historicalNoticeText: {
+    flex: 1,
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 17,
   },
   placeholderCard: {
     alignItems: "center",

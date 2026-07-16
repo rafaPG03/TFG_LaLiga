@@ -21,6 +21,7 @@ const MENU_OPTIONS = [
 	{ label: 'Equipos', route: 'Equipos', icon: 'shield-outline' },
 	{ label: 'Jugadores', route: 'Jugadores', icon: 'people-outline' },
 	{ label: 'Partidos', route: 'Partidos', icon: 'football-outline' },
+	{ label: 'Simulacion', route: 'SimulacionTemporada', icon: 'analytics-outline' },
 ];
 
 export default function CustomDrawer(props) {

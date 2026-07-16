@@ -20,8 +20,8 @@ export default function AnalisisEquipo({ id_equipo }) {
           tabBarActiveTintColor: "#12233f",
           tabBarInactiveTintColor: "#6f8096",
           tabBarStyle: { backgroundColor: "#ffffff" },
-          tabBarItemStyle: { width: 150, paddingHorizontal: 12 },
-          tabBarScrollEnabled: true,
+          tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
+          tabBarScrollEnabled: false,
           lazy: true,
         }}
       >

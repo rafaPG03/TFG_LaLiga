@@ -565,6 +565,12 @@ const getDashboardEquipo = async (req, res) => {
         .json({ error: "No hay datos de temporada para este equipo" });
     }
 
+    const ultimaTemporadaResult = await pool.query(
+      "SELECT MAX(temporada) AS temporada FROM h_equipo_temporada",
+    );
+    const ultimaTemporada = toNumber(ultimaTemporadaResult.rows[0]?.temporada);
+    const esUltimaTemporada = temporada === ultimaTemporada;
+
     const [
       temporadasResult,
       lineaResult,
@@ -574,6 +580,10 @@ const getDashboardEquipo = async (req, res) => {
       partidosResult,
       proximoPartidoResult,
       referenciasResult,
+      necesidadesResult,
+      recomendacionesResult,
+      formaDmResult,
+      montecarloResult,
     ] = await Promise.all([
       pool.query(
         `
@@ -625,19 +635,50 @@ const getDashboardEquipo = async (req, res) => {
       ),
       pool.query(
         `
+          WITH base AS (
+            SELECT
+              r.ataque,
+              r.creacion,
+              r.defensa,
+              r.porteros,
+              r.duelos,
+              r.regates,
+              CASE
+                WHEN UPPER(TRIM(COALESCE(h.posicion, ''))) IN ('P', 'POR', 'PORTERO') THEN 'POR'
+                WHEN UPPER(TRIM(COALESCE(h.posicion, ''))) IN ('DF', 'DEF', 'DEFENSA') THEN 'DEF'
+                WHEN UPPER(TRIM(COALESCE(h.posicion, ''))) IN ('M', 'MC', 'MED', 'MEDIO', 'MEDIOCENTRO') THEN 'MED'
+                WHEN UPPER(TRIM(COALESCE(h.posicion, ''))) IN ('DL', 'DEL', 'DELANTERO') THEN 'DEL'
+                ELSE NULL
+              END AS posicion_codigo
+            FROM dm_jugadores_ratings r
+            JOIN h_jugador_temporada h
+              ON h.id_jugador = r.id_jugador
+             AND h.temporada = r.temporada
+             AND h.id_equipo = $1
+            WHERE r.temporada = $2
+          ),
+          medias AS (
+            SELECT
+              AVG(COALESCE(defensa, 0)) FILTER (WHERE posicion_codigo = 'DEF') AS defensa_def,
+              AVG(COALESCE(defensa, 0)) FILTER (WHERE posicion_codigo = 'MED') AS defensa_med,
+              AVG(COALESCE(porteros, 0)) FILTER (WHERE posicion_codigo = 'POR') AS porteros_por,
+              AVG(COALESCE(creacion, 0)) FILTER (WHERE posicion_codigo = 'MED') AS creacion_med,
+              AVG(COALESCE(creacion, 0)) FILTER (WHERE posicion_codigo = 'DEL') AS creacion_del,
+              AVG(COALESCE(ataque, 0)) FILTER (WHERE posicion_codigo = 'DEL') AS ataque_del,
+              AVG(COALESCE(ataque, 0)) FILTER (WHERE posicion_codigo = 'MED') AS ataque_med,
+              AVG(COALESCE(duelos, 0)) FILTER (WHERE posicion_codigo IS DISTINCT FROM 'POR') AS duelos_campo,
+              AVG(COALESCE(regates, 0)) FILTER (WHERE posicion_codigo = 'DEL') AS regates_del,
+              AVG(COALESCE(regates, 0)) FILTER (WHERE posicion_codigo = 'MED') AS regates_med
+            FROM base
+          )
           SELECT
-            AVG(COALESCE(r.ataque, 0)) AS ataque,
-            AVG(COALESCE(r.creacion, 0)) AS creacion,
-            AVG(COALESCE(r.defensa, 0)) AS defensa,
-            AVG(COALESCE(r.porteros, 0)) AS porteros,
-            AVG(COALESCE(r.duelos, 0)) AS duelos,
-            AVG(COALESCE(r.regates, 0)) AS regates
-          FROM h_jugadores_ratings r
-          JOIN h_jugador_temporada h
-            ON h.id_jugador = r.id_jugador
-           AND h.temporada = r.temporada
-           AND h.id_equipo = $1
-          WHERE r.temporada = $2;
+            (COALESCE(ataque_del, 0) * 0.75) + (COALESCE(ataque_med, 0) * 0.25) AS ataque,
+            (COALESCE(creacion_med, 0) * 0.60) + (COALESCE(creacion_del, 0) * 0.40) AS creacion,
+            (COALESCE(defensa_def, 0) * 0.75) + (COALESCE(defensa_med, 0) * 0.25) AS defensa,
+            COALESCE(porteros_por, 0) AS porteros,
+            COALESCE(duelos_campo, 0) AS duelos,
+            (COALESCE(regates_del, 0) * 0.50) + (COALESCE(regates_med, 0) * 0.50) AS regates
+          FROM medias;
         `,
         [id_equipo, temporada],
       ),
@@ -768,11 +809,87 @@ const getDashboardEquipo = async (req, res) => {
             MAX(COALESCE(porteros, 0)) AS max_porteros,
             MAX(COALESCE(duelos, 0)) AS max_duelos,
             MAX(COALESCE(regates, 0)) AS max_regates
-          FROM h_jugadores_ratings
+          FROM dm_jugadores_ratings
           WHERE temporada = $1;
         `,
         [temporada],
       ),
+      pool.query(
+        `
+          SELECT
+            id_equipo,
+            temporada,
+            necesidad,
+            motivo
+          FROM dm_necesidades_plantilla
+          WHERE id_equipo = $1
+            AND temporada = $2
+          ORDER BY
+            CASE
+              WHEN necesidad ILIKE 'Sin necesidad%' THEN 2
+              ELSE 1
+            END,
+            necesidad ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      esUltimaTemporada
+        ? pool.query(
+            `
+              SELECT
+                r.id_equipo,
+                r.nombre_equipo,
+                r.necesidad,
+                r.id_jugador,
+                r.nombre_jugador,
+                r.id_equipo_actual,
+                r.equipo_actual,
+                r.score_recomendacion,
+                r.motivo,
+                j.foto,
+                e.logo AS logo_equipo_actual
+              FROM dm_recomendacion_fichajes r
+              LEFT JOIN dim_jugador j ON j.id_jugador = r.id_jugador
+              LEFT JOIN dim_equipo e ON e.id_equipo = r.id_equipo_actual
+              WHERE r.id_equipo = $1
+              ORDER BY r.necesidad ASC, r.score_recomendacion DESC NULLS LAST, r.nombre_jugador ASC;
+            `,
+            [id_equipo],
+          )
+        : Promise.resolve({ rows: [] }),
+      pool.query(
+        `
+          SELECT
+            temporada,
+            id_equipo,
+            nombre_equipo,
+            puntuacion_forma,
+            estado,
+            tendencia,
+            variabilidad
+          FROM dm_forma_equipos
+          WHERE id_equipo = $1
+            AND temporada = $2;
+        `,
+        [id_equipo, temporada],
+      ),
+      esUltimaTemporada
+        ? pool.query(
+            `
+              SELECT
+                id_equipo,
+                equipo,
+                campeon_pct,
+                champions_pct,
+                europa_pct,
+                media_tabla_pct,
+                descenso_pct
+              FROM dm_simulacion_montecarlo
+              WHERE id_equipo = $1;
+            `,
+            [id_equipo],
+          )
+        : Promise.resolve({ rows: [] }),
     ]);
 
     const linea = lineaResult.rows || [];
@@ -885,8 +1002,24 @@ const getDashboardEquipo = async (req, res) => {
           victorias: ultimaFila.victorias,
           empates: ultimaFila.empates,
           derrotas: ultimaFila.derrotas,
-        }
+      }
       : null;
+
+    const posicionFinal = toNumber(clasificacionActual?.posicion);
+    const montecarloHistorico =
+      !esUltimaTemporada && posicionFinal
+        ? {
+            id_equipo: Number(id_equipo),
+            equipo: equipoResult.rows[0]?.nombre_equipo || null,
+            campeon_pct: posicionFinal === 1 ? 100 : 0,
+            champions_pct: posicionFinal >= 1 && posicionFinal <= 4 ? 100 : 0,
+            europa_pct: posicionFinal >= 1 && posicionFinal <= 7 ? 100 : 0,
+            media_tabla_pct:
+              posicionFinal >= 8 && posicionFinal <= 17 ? 100 : 0,
+            descenso_pct:
+              posicionFinal >= 18 && posicionFinal <= 20 ? 100 : 0,
+          }
+        : null;
 
     res.json({
       temporada,
@@ -913,6 +1046,13 @@ const getDashboardEquipo = async (req, res) => {
       ultimos_partidos: ultimosPartidos,
       resumen_local_visitante: resumenLocalVisitante,
       bandas,
+      forma_dm: formaDmResult.rows[0] || null,
+      montecarlo: montecarloResult.rows[0] || montecarloHistorico,
+      fichajes: {
+        es_ultima_temporada: esUltimaTemporada,
+        necesidades: necesidadesResult.rows || [],
+        recomendaciones: recomendacionesResult.rows || [],
+      },
       radar_referencias: {
         max_ataque: toNumber(referencias.max_ataque) || 1,
         max_creacion: toNumber(referencias.max_creacion) || 1,

@@ -12,6 +12,7 @@ router.get('/h2h/:id1/:id2', partidoController.getPartidosEntreEquipos);
 router.get('/:id_partido/jugadores_destacados', partidoController.getJugadoresDestacadosPartido);
 /* Estado actual de equipo de un partido */
 router.get('/:id_partido/estado_actual', partidoController.getEstadoActualPartido);
+router.get('/:id_partido/data_mining', partidoController.getDataMiningPartido);
 /* Información de un partido */
 router.get('/:id_partido/info', partidoController.getInfoPartido);
 /* Eventos de un partido */

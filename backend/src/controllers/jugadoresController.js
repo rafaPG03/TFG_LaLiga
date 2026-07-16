@@ -204,7 +204,7 @@ const getRatingsJugador = async (req, res) => {
         if (!temporadaSeleccionada) {
             const temporadaResult = await pool.query(
                 `SELECT MAX(temporada) AS temporada
-                 FROM h_jugadores_ratings
+                 FROM dm_jugadores_ratings
                  WHERE id_jugador = $1`,
                 [id_jugador]
             );
@@ -287,7 +287,7 @@ const getRatingsJugador = async (req, res) => {
                 ts.goles_concedidos,
                 ts.paradas,
                 ts.penaltis_parados
-            FROM h_jugadores_ratings r
+            FROM dm_jugadores_ratings r
             LEFT JOIN temporada_stats ts
               ON ts.id_jugador = r.id_jugador
              AND ts.temporada = r.temporada
