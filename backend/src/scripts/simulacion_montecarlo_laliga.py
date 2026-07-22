@@ -7,12 +7,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import psycopg2
+from psycopg2.extras import execute_values
 
-
-RUTA_RAIZ = Path(__file__).resolve().parents[2]
-RUTA_DM = RUTA_RAIZ / "DATA_MINING" / "DSA_DM"
-RUTA_PREDICCIONES = RUTA_DM / "predicciones_partidos_incompletos.csv"
-RUTA_SALIDA = RUTA_DM / "simulacion_montecarlo_laliga_resultados.csv"
 
 TEMPORADA_ACTUAL = 2025
 DESEMPATE_DG = True
@@ -31,8 +27,6 @@ def leer_argumentos() -> argparse.Namespace:
     parser.add_argument("--db-name", default=os.getenv("PGDATABASE", "TFG_BDLaLiga"))
     parser.add_argument("--db-user", default=os.getenv("PGUSER", "postgres"))
     parser.add_argument("--db-password", default=os.getenv("PGPASSWORD", "betico18"))
-    parser.add_argument("--predicciones", default=str(RUTA_PREDICCIONES))
-    parser.add_argument("--output", default=str(RUTA_SALIDA))
     parser.add_argument(
         "--input-json",
         default=None,
@@ -55,9 +49,14 @@ def leer_tabla(conexion, consulta: str) -> pd.DataFrame:
     return pd.read_sql_query(consulta, conexion)
 
 
-def cargar_predicciones(ruta_predicciones: Path) -> pd.DataFrame:
-    predicciones = pd.read_csv(ruta_predicciones)
-    return normalizar_predicciones(predicciones)
+def conectar_bd(argumentos: argparse.Namespace):
+    return psycopg2.connect(
+        host=argumentos.db_host,
+        port=argumentos.db_port,
+        dbname=argumentos.db_name,
+        user=argumentos.db_user,
+        password=argumentos.db_password,
+    )
 
 
 def normalizar_predicciones(predicciones: pd.DataFrame) -> pd.DataFrame:
@@ -71,6 +70,15 @@ def normalizar_predicciones(predicciones: pd.DataFrame) -> pd.DataFrame:
             + ", ".join(sorted(columnas_faltantes))
         )
 
+    predicciones = predicciones.copy()
+    predicciones["id_local"] = pd.to_numeric(predicciones["id_local"], errors="raise").astype(int)
+    predicciones["id_visitante"] = pd.to_numeric(
+        predicciones["id_visitante"], errors="raise"
+    ).astype(int)
+    predicciones[columnas_probabilidad] = predicciones[columnas_probabilidad].apply(
+        pd.to_numeric, errors="raise"
+    )
+
     if predicciones[columnas_probabilidad].max().max() > 1.0:
         predicciones[columnas_probabilidad] = predicciones[columnas_probabilidad] / 100.0
 
@@ -80,16 +88,25 @@ def normalizar_predicciones(predicciones: pd.DataFrame) -> pd.DataFrame:
     return predicciones
 
 
-def cargar_clasificacion(argumentos: argparse.Namespace) -> pd.DataFrame:
-    conexion = psycopg2.connect(
-        host=argumentos.db_host,
-        port=argumentos.db_port,
-        dbname=argumentos.db_name,
-        user=argumentos.db_user,
-        password=argumentos.db_password,
-    )
+def cargar_datos_desde_bd(argumentos: argparse.Namespace) -> tuple[pd.DataFrame, pd.DataFrame]:
+    conexion = conectar_bd(argumentos)
 
     try:
+        predicciones = leer_tabla(
+            conexion,
+            """
+            SELECT
+                id_partido,
+                id_local,
+                id_visitante,
+                prob_victoria_local,
+                prob_empate,
+                prob_victoria_visitante
+            FROM public.dm_prediccion_partidos
+            ORDER BY id_partido ASC
+            """,
+        )
+
         clasificacion = leer_tabla(
             conexion,
             """
@@ -106,7 +123,61 @@ def cargar_clasificacion(argumentos: argparse.Namespace) -> pd.DataFrame:
     finally:
         conexion.close()
 
-    return clasificacion
+    return normalizar_predicciones(predicciones), clasificacion
+
+
+def guardar_resultados_en_bd(argumentos: argparse.Namespace, resultados: pd.DataFrame) -> None:
+    columnas = [
+        "id_equipo",
+        "equipo",
+        "campeon_%",
+        "champions_%",
+        "europa_%",
+        "media_tabla_%",
+        "descenso_%",
+    ]
+    filas = [
+        (
+            int(row["id_equipo"]),
+            str(row["equipo"]),
+            float(row["campeon_%"]),
+            float(row["champions_%"]),
+            float(row["europa_%"]),
+            float(row["media_tabla_%"]),
+            float(row["descenso_%"]),
+        )
+        for row in resultados[columnas].to_dict(orient="records")
+    ]
+
+    conexion = conectar_bd(argumentos)
+    try:
+        with conexion:
+            with conexion.cursor() as cursor:
+                execute_values(
+                    cursor,
+                    """
+                    INSERT INTO public.dm_simulacion_montecarlo (
+                        id_equipo,
+                        equipo,
+                        campeon_pct,
+                        champions_pct,
+                        europa_pct,
+                        media_tabla_pct,
+                        descenso_pct
+                    )
+                    VALUES %s
+                    ON CONFLICT (id_equipo) DO UPDATE SET
+                        equipo = EXCLUDED.equipo,
+                        campeon_pct = EXCLUDED.campeon_pct,
+                        champions_pct = EXCLUDED.champions_pct,
+                        europa_pct = EXCLUDED.europa_pct,
+                        media_tabla_pct = EXCLUDED.media_tabla_pct,
+                        descenso_pct = EXCLUDED.descenso_pct
+                    """,
+                    filas,
+                )
+    finally:
+        conexion.close()
 
 
 def leer_json_entrada(ruta_entrada: str) -> dict:
@@ -280,8 +351,7 @@ def main() -> None:
         equipos, predicciones, temporada_payload = cargar_datos_desde_json(payload)
         temporada = temporada_payload if temporada_payload is not None else TEMPORADA_ACTUAL
     else:
-        predicciones = cargar_predicciones(Path(argumentos.predicciones))
-        clasificacion = cargar_clasificacion(argumentos)
+        predicciones, clasificacion = cargar_datos_desde_bd(argumentos)
         equipos = preparar_estado_inicial(clasificacion)
 
     resultados = simular_liga(predicciones, equipos)
@@ -300,9 +370,8 @@ def main() -> None:
     else:
         print(resultados.to_string(index=False))
 
-    archivo_salida = Path(argumentos.output)
-    archivo_salida.parent.mkdir(parents=True, exist_ok=True)
-    resultados.to_csv(archivo_salida, index=False)
+    if not argumentos.input_json:
+        guardar_resultados_en_bd(argumentos, resultados)
 
 
 if __name__ == "__main__":

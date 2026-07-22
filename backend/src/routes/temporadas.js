@@ -9,6 +9,7 @@ router.get('/graficos', temporadaController.getGraficosTemporada);
 router.get('/montecarlo', temporadaController.getMontecarloTemporada);
 router.get('/simulacion/inicial', temporadaController.getSimulacionTemporadaInicial);
 router.get('/simulacion/partidos', temporadaController.getPartidosSimulacionJornada);
+router.post('/simulacion/montecarlo', temporadaController.getMontecarloSimulacionManual);
 router.get('/info', temporadaController.getResumenTemporada);
 router.get('/destacados', temporadaController.getDestacadosTemporada);
 router.get('/rankings', temporadaController.getRankingsTemporada);

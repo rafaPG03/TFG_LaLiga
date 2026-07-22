@@ -96,12 +96,99 @@ const normalizarMarcador = (valor) => {
   return String(valor);
 };
 
+const parseMarcador = (valor) => {
+  if (valor === null || valor === undefined || valor === '') return null;
+  const n = Number(valor);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+};
+
 const getJornadasVisibles = (jornadas, jornadaSeleccionada) => {
   const index = jornadas.findIndex((item) => item === jornadaSeleccionada);
   if (index < 0) return jornadas.slice(0, 5);
   const start = Math.max(0, Math.min(index - 2, jornadas.length - 5));
   return jornadas.slice(start, start + 5);
 };
+
+const recalcularClasificacion = (clasificacionBase, partidosEditados) => {
+  const equiposMap = new Map(
+    clasificacionBase.map((equipo) => [
+      Number(equipo.id_equipo),
+      {
+        ...equipo,
+        puntos: toNumber(equipo.puntos),
+        partidos_jugados: toNumber(equipo.partidos_jugados),
+        victorias: toNumber(equipo.victorias),
+        empates: toNumber(equipo.empates),
+        derrotas: toNumber(equipo.derrotas),
+        gf: toNumber(equipo.gf),
+        gc: toNumber(equipo.gc),
+        dg: toNumber(equipo.dg),
+      },
+    ]),
+  );
+
+  let resultadosAplicados = 0;
+
+  partidosEditados.forEach((partido) => {
+    if (partido.status === 'Completado') return;
+
+    const idLocal = Number(partido.id_local);
+    const idVisitante = Number(partido.id_visitante);
+    const local = equiposMap.get(idLocal);
+    const visitante = equiposMap.get(idVisitante);
+    const golesLocal = parseMarcador(partido.goles_local);
+    const golesVisitante = parseMarcador(partido.goles_visitante);
+
+    if (!local || !visitante || golesLocal === null || golesVisitante === null) {
+      return;
+    }
+
+    local.partidos_jugados += 1;
+    visitante.partidos_jugados += 1;
+    local.gf += golesLocal;
+    local.gc += golesVisitante;
+    visitante.gf += golesVisitante;
+    visitante.gc += golesLocal;
+
+    if (golesLocal > golesVisitante) {
+      local.victorias += 1;
+      local.puntos += 3;
+      visitante.derrotas += 1;
+    } else if (golesLocal < golesVisitante) {
+      visitante.victorias += 1;
+      visitante.puntos += 3;
+      local.derrotas += 1;
+    } else {
+      local.empates += 1;
+      visitante.empates += 1;
+      local.puntos += 1;
+      visitante.puntos += 1;
+    }
+
+    local.dg = local.gf - local.gc;
+    visitante.dg = visitante.gf - visitante.gc;
+    resultadosAplicados += 1;
+  });
+
+  const clasificacion = Array.from(equiposMap.values())
+    .sort((a, b) => {
+      const puntosDiff = toNumber(b.puntos) - toNumber(a.puntos);
+      if (puntosDiff !== 0) return puntosDiff;
+      const dgDiff = toNumber(b.dg) - toNumber(a.dg);
+      if (dgDiff !== 0) return dgDiff;
+      return toNumber(b.gf) - toNumber(a.gf);
+    })
+    .map((equipo, idx) => ({ ...equipo, posicion: idx + 1 }));
+
+  return { clasificacion, resultadosAplicados };
+};
+
+const mezclarPartidosConSimulacion = (partidosApi, partidosSimulados) => (
+  partidosApi.map((partido) => {
+    const partidoSimulado = partidosSimulados[partido.id_partido];
+    return partidoSimulado ? { ...partido, ...partidoSimulado } : partido;
+  })
+);
 
 function EstadoPantalla({ icon = 'alert-circle-outline', text, loading }) {
   return (
@@ -125,6 +212,8 @@ function ResultadosTab({
   errorJornada,
   onSeleccionarJornada,
   onActualizarMarcador,
+  onRecalcular,
+  onReset,
 }) {
   const jornadaIndex = jornadas.findIndex((item) => item === jornadaSeleccionada);
   const puedeAnterior = jornadaIndex > 0;
@@ -166,6 +255,7 @@ function ResultadosTab({
             style={[styles.scoreInput, completado && styles.scoreInputOfficial]}
             value={normalizarMarcador(partido.goles_local)}
             onChangeText={(value) => onActualizarMarcador(partido.id_partido, 'goles_local', value)}
+            editable={!completado}
             keyboardType="number-pad"
             placeholder="-"
             placeholderTextColor="#8aa0b5"
@@ -176,6 +266,7 @@ function ResultadosTab({
             style={[styles.scoreInput, completado && styles.scoreInputOfficial]}
             value={normalizarMarcador(partido.goles_visitante)}
             onChangeText={(value) => onActualizarMarcador(partido.id_partido, 'goles_visitante', value)}
+            editable={!completado}
             keyboardType="number-pad"
             placeholder="-"
             placeholderTextColor="#8aa0b5"
@@ -261,11 +352,11 @@ function ResultadosTab({
       </View>
 
       <View style={styles.actionRow}>
-        <TouchableOpacity style={styles.primaryAction} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.primaryAction} onPress={onRecalcular} activeOpacity={0.85}>
           <Ionicons name="calculator-outline" size={18} color="#ffffff" />
           <Text style={styles.primaryActionText}>Recalcular escenario</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryAction} activeOpacity={0.85}>
+        <TouchableOpacity style={styles.secondaryAction} onPress={onReset} activeOpacity={0.85}>
           <Ionicons name="refresh-outline" size={18} color="#1f6fa7" />
         </TouchableOpacity>
       </View>
@@ -273,7 +364,14 @@ function ResultadosTab({
   );
 }
 
-function ClasificacionTab({ clasificacion, montecarlo, navigation }) {
+function ClasificacionTab({
+  clasificacion,
+  montecarlo,
+  navigation,
+  cargandoMontecarlo,
+  errorMontecarlo,
+  onEjecutarMontecarlo,
+}) {
   const [vistaResultado, setVistaResultado] = useState('CLASIFICACION');
 
   const renderEquipo = (row) => {
@@ -390,7 +488,7 @@ function ClasificacionTab({ clasificacion, montecarlo, navigation }) {
       </View>
 
       <View style={styles.resultTabs}>
-        {['CLASIFICACION', 'MONTECARLO'].map((item) => (
+        {['CLASIFICACION', 'PROBABILIDADES'].map((item) => (
           <TouchableOpacity
             key={item}
             style={[styles.resultTab, vistaResultado === item && styles.resultTabActive]}
@@ -422,9 +520,36 @@ function ClasificacionTab({ clasificacion, montecarlo, navigation }) {
           ? clasificacion.length > 0
             ? renderClasificacion()
             : <EstadoPantalla icon="stats-chart-outline" text="No hay clasificacion disponible" />
-          : montecarlo.length > 0
-            ? renderMontecarlo()
-            : <EstadoPantalla icon="analytics-outline" text="No hay datos de Probabilidades" />}
+          : (
+            <>
+              <TouchableOpacity
+                style={[styles.montecarloAction, cargandoMontecarlo && styles.montecarloActionDisabled]}
+                onPress={onEjecutarMontecarlo}
+                disabled={cargandoMontecarlo}
+                activeOpacity={0.85}
+              >
+                {cargandoMontecarlo ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Ionicons name="analytics-outline" size={18} color="#ffffff" />
+                )}
+                <Text style={styles.montecarloActionText}>
+                  {cargandoMontecarlo ? 'Simulando...' : 'Ejecutar probabilidades'}
+                </Text>
+              </TouchableOpacity>
+
+              {errorMontecarlo ? (
+                <View style={styles.inlineError}>
+                  <Ionicons name="alert-circle-outline" size={16} color="#9b4b4b" />
+                  <Text style={styles.inlineErrorText}>{errorMontecarlo}</Text>
+                </View>
+              ) : null}
+
+              {montecarlo.length > 0
+                ? renderMontecarlo()
+                : <EstadoPantalla icon="analytics-outline" text="No hay datos de Probabilidades" />}
+            </>
+          )}
       </View>
     </ScrollView>
   );
@@ -435,12 +560,17 @@ export default function SimulacionTemporadaScreen({ navigation }) {
   const [jornadas, setJornadas] = useState([]);
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState(null);
   const [partidos, setPartidos] = useState([]);
+  const [partidosSimulados, setPartidosSimulados] = useState({});
+  const [clasificacionBase, setClasificacionBase] = useState([]);
   const [clasificacion, setClasificacion] = useState([]);
+  const [montecarloBase, setMontecarloBase] = useState([]);
   const [montecarlo, setMontecarlo] = useState([]);
   const [cargandoInicial, setCargandoInicial] = useState(true);
   const [cargandoJornada, setCargandoJornada] = useState(false);
+  const [cargandoMontecarlo, setCargandoMontecarlo] = useState(false);
   const [errorInicial, setErrorInicial] = useState('');
   const [errorJornada, setErrorJornada] = useState('');
+  const [errorMontecarlo, setErrorMontecarlo] = useState('');
 
   const cargarInicial = async () => {
     try {
@@ -457,12 +587,19 @@ export default function SimulacionTemporadaScreen({ navigation }) {
       setJornadas(Array.isArray(data?.jornadas) ? data.jornadas.map(Number).filter(Number.isFinite) : []);
       setJornadaSeleccionada(Number.isFinite(Number(data?.jornada_actual)) ? Number(data.jornada_actual) : null);
       setPartidos(Array.isArray(data?.partidos) ? data.partidos : []);
-      setClasificacion(Array.isArray(data?.clasificacion) ? data.clasificacion : []);
-      setMontecarlo(Array.isArray(data?.montecarlo) ? data.montecarlo : []);
+      const clasificacionInicial = Array.isArray(data?.clasificacion) ? data.clasificacion : [];
+      const montecarloInicial = Array.isArray(data?.montecarlo) ? data.montecarlo : [];
+      setClasificacionBase(clasificacionInicial);
+      setClasificacion(clasificacionInicial);
+      setMontecarloBase(montecarloInicial);
+      setMontecarlo(montecarloInicial);
     } catch (_e) {
       setErrorInicial('No se pudo cargar la simulacion');
       setPartidos([]);
+      setPartidosSimulados({});
+      setClasificacionBase([]);
       setClasificacion([]);
+      setMontecarloBase([]);
       setMontecarlo([]);
     } finally {
       setCargandoInicial(false);
@@ -490,7 +627,8 @@ export default function SimulacionTemporadaScreen({ navigation }) {
       }
 
       const data = await response.json();
-      setPartidos(Array.isArray(data?.partidos) ? data.partidos : []);
+      const partidosApi = Array.isArray(data?.partidos) ? data.partidos : [];
+      setPartidos(mezclarPartidosConSimulacion(partidosApi, partidosSimulados));
     } catch (_e) {
       setErrorJornada('No se pudieron cargar los partidos de la jornada');
       setPartidos([]);
@@ -501,11 +639,89 @@ export default function SimulacionTemporadaScreen({ navigation }) {
 
   const actualizarMarcador = (idPartido, campo, valor) => {
     const soloNumeros = valor.replace(/[^0-9]/g, '').slice(0, 2);
+    const partidoActual = partidos.find((partido) => partido.id_partido === idPartido);
+
+    if (!partidoActual || partidoActual.status === 'Completado') {
+      return;
+    }
+
     setPartidos((prev) =>
       prev.map((partido) =>
         partido.id_partido === idPartido ? { ...partido, [campo]: soloNumeros } : partido
       )
     );
+    setPartidosSimulados((prev) => {
+      const partidoBase = prev[idPartido] || partidoActual;
+      return {
+        ...prev,
+        [idPartido]: {
+          ...partidoBase,
+          [campo]: soloNumeros,
+        },
+      };
+    });
+  };
+
+  const recalcularEscenario = () => {
+    const { clasificacion: clasificacionRecalculada, resultadosAplicados } =
+      recalcularClasificacion(clasificacionBase, Object.values(partidosSimulados));
+
+    setClasificacion(clasificacionRecalculada);
+
+    if (resultadosAplicados === 0) {
+      Alert.alert('Sin resultados nuevos', 'Introduce un marcador completo en un partido pendiente.');
+    }
+  };
+
+  const resetearEscenario = () => {
+    setPartidosSimulados({});
+    setPartidos((prev) =>
+      prev.map((partido) => ({
+        ...partido,
+        goles_local: partido.status === 'Completado' ? partido.goles_local : null,
+        goles_visitante: partido.status === 'Completado' ? partido.goles_visitante : null,
+      }))
+    );
+    setClasificacion(clasificacionBase);
+    setMontecarlo(montecarloBase);
+    setErrorMontecarlo('');
+  };
+
+  const ejecutarMontecarlo = async () => {
+    try {
+      setCargandoMontecarlo(true);
+      setErrorMontecarlo('');
+
+      const { clasificacion: clasificacionRecalculada } =
+        recalcularClasificacion(clasificacionBase, Object.values(partidosSimulados));
+
+      setClasificacion(clasificacionRecalculada);
+
+      const response = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/temporadas/simulacion/montecarlo`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            temporada,
+            clasificacion: clasificacionRecalculada,
+            partidos_simulados: Object.values(partidosSimulados),
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('No se pudo ejecutar Monte Carlo');
+      }
+
+      const data = await response.json();
+      setMontecarlo(Array.isArray(data?.montecarlo) ? data.montecarlo : []);
+    } catch (_e) {
+      setErrorMontecarlo('No se pudo ejecutar la simulacion Monte Carlo');
+      Alert.alert('Error', 'No se pudo ejecutar la simulacion Monte Carlo.');
+    } finally {
+      setCargandoMontecarlo(false);
+    }
   };
 
   const tabBarOptions = useMemo(() => ({
@@ -572,6 +788,8 @@ export default function SimulacionTemporadaScreen({ navigation }) {
                 errorJornada={errorJornada}
                 onSeleccionarJornada={seleccionarJornada}
                 onActualizarMarcador={actualizarMarcador}
+                onRecalcular={recalcularEscenario}
+                onReset={resetearEscenario}
               />
             )}
           </Tab.Screen>
@@ -581,6 +799,9 @@ export default function SimulacionTemporadaScreen({ navigation }) {
                 clasificacion={clasificacion}
                 montecarlo={montecarlo}
                 navigation={navigation}
+                cargandoMontecarlo={cargandoMontecarlo}
+                errorMontecarlo={errorMontecarlo}
+                onEjecutarMontecarlo={ejecutarMontecarlo}
               />
             )}
           </Tab.Screen>
@@ -870,6 +1091,42 @@ const styles = StyleSheet.create({
   },
   resultTabTextActive: {
     color: '#103a5d',
+  },
+  montecarloAction: {
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: '#1f6fa7',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  montecarloActionDisabled: {
+    backgroundColor: '#7ea7c5',
+  },
+  montecarloActionText: {
+    marginLeft: 7,
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  inlineError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff1f1',
+    borderWidth: 1,
+    borderColor: '#ffd2d2',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  inlineErrorText: {
+    flex: 1,
+    marginLeft: 6,
+    color: '#9b4b4b',
+    fontSize: 12,
+    fontWeight: '700',
   },
   tableWrap: {
     borderWidth: 1,

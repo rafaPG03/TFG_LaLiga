@@ -234,6 +234,134 @@ Tabla h_partido_eventos:
 - detalle
 - comentarios
 
+TABLAS DATA MINING DISPONIBLES:
+
+Tabla dm_prediccion_partidos:
+- id_partido
+- id_local
+- nombre_local
+- id_visitante
+- nombre_visitante
+- prob_victoria_local
+- prob_empate
+- prob_victoria_visitante
+- prediccion
+
+Tabla dm_golesesperados_partidos:
+- id_partido
+- id_local
+- nombre_local
+- id_visitante
+- nombre_visitante
+- goles_local_esperados
+- goles_visitante_esperados
+- diferencia_goles_esperada
+- resultado_estimado
+- marcador_estimado
+
+Tabla dm_probables_goleadores:
+- id_partido
+- id_equipo
+- id_jugador
+- nombre_jugador
+- probabilidad
+
+Tabla dm_simulacion_montecarlo:
+- id_equipo
+- equipo
+- campeon_pct
+- champions_pct
+- europa_pct
+- media_tabla_pct
+- descenso_pct
+
+Tabla dm_estado_forma_equipos:
+- id_equipo
+- nombre_equipo
+- puntuacion_forma
+- estado
+- tendencia
+- variabilidad
+
+Tabla dm_estado_forma_jugadores:
+- id_jugador
+- nombre_jugador
+- id_equipo
+- estado
+- score_temporada
+- score_reciente
+- evolucion
+
+Tabla dm_jugadores_ratings:
+- id_jugador
+- temporada
+- nombre
+- ataque
+- creacion
+- defensa
+- porteros
+- duelos
+- regates
+- percentil_ataque
+- percentil_creacion
+- percentil_defensa
+- percentil_porteros
+- percentil_duelos
+- percentil_regates
+
+Tabla dm_necesidades_plantilla:
+- id_equipo
+- temporada
+- necesidad
+- motivo
+
+Tabla dm_recomendacion_fichajes:
+- id_equipo
+- nombre_equipo
+- necesidad
+- id_jugador
+- nombre_jugador
+- id_equipo_actual
+- equipo_actual
+- score_recomendacion
+- motivo
+
+Tabla dm_similitud_jugadores:
+- id_jugador
+- temporada
+- nombre
+- posicion
+- cluster
+- id_similar1
+- nombre_similar1
+- similitud1
+- id_similar2
+- nombre_similar2
+- similitud2
+- id_similar3
+- nombre_similar3
+- similitud3
+- id_similar4
+- nombre_similar4
+- similitud4
+- id_similar5
+- nombre_similar5
+- similitud5
+
+REGLAS DATA MINING:
+- Para predicciones de resultado de partidos usa dm_prediccion_partidos. Si necesitas fecha, jornada, temporada o estado del partido, une con dim_partidos por id_partido y con dim_tiempo por dim_partidos.id_tiempo = dim_tiempo.id_tiempo.
+- Para goles esperados o marcador estimado usa dm_golesesperados_partidos. Si necesitas nombres oficiales, logos o codigos de equipos, une id_local/id_visitante con dim_equipo.
+- Para goleadores probables usa dm_probables_goleadores y une con dim_jugador por id_jugador si necesitas foto, nacionalidad o nombre oficial.
+- Para probabilidades de campeon, Champions, Europa, media tabla o descenso usa dm_simulacion_montecarlo. Esta tabla no tiene temporada; representa la simulacion actual. Probabilidades -> 0-100 
+- Para estado de forma de equipos usa dm_estado_forma_equipos. El campo estado resume la forma, tendencia indica subida o bajada y variabilidad mide regularidad.
+- Para estado de forma de jugadores usa dm_estado_forma_jugadores. score_reciente representa el rendimiento reciente y evolucion compara reciente contra temporada.
+- Para atributos analiticos de jugadores por temporada usa dm_jugadores_ratings. Usa percentil_* cuando pregunten por percentiles o comparacion relativa.
+- Para necesidades de plantilla usa dm_necesidades_plantilla y filtra por temporada cuando la pregunta lo indique.
+- Para recomendaciones de fichajes usa dm_recomendacion_fichajes. score_recomendacion mayor significa mejor recomendacion.
+- Para jugadores similares usa dm_similitud_jugadores. Si preguntan por similares a un jugador concreto, busca primero el jugador por ILIKE y luego filtra dm_similitud_jugadores por id_jugador y temporada.
+- En tablas Data Mining, si hay columnas de nombre ya incluidas puedes usarlas directamente, pero si el usuario pide informacion completa o imagenes haz join con dim_equipo o dim_jugador.
+- Si la pregunta dice "probabilidad", "prediccion", "esperado", "Montecarlo", "similar", "recomendacion", "fichaje", "estado de forma" o "data mining", prioriza estas tablas Data Mining.
+
 RECOMENDACIONES:
 - Para buscar jugadores por nombre, usa siempre ILIKE con comodines: nombre ILIKE '%texto%'
 - Usa LIMIT cuando preguntes por mejores, mayores, rankings o listados largos.

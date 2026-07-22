@@ -1,3 +1,5 @@
+const path = require("path");
+const { spawn } = require("child_process");
 const pool = require("../config/db");
 
 const parseEntero = (valor) => {
@@ -712,6 +714,187 @@ const obtenerPartidosSimulacion = async (temporada, jornada) => {
   return result.rows || [];
 };
 
+const ejecutarMontecarloManual = (payload) =>
+  new Promise((resolve, reject) => {
+    const pythonBin =
+      process.env.MONTECARLO_PYTHON_PATH || process.env.PYTHON_PATH || "python";
+    const scriptPath = path.join(
+      __dirname,
+      "..",
+      "scripts",
+      "simulacion_montecarlo_laliga.py",
+    );
+    const proceso = spawn(pythonBin, [
+      scriptPath,
+      "--input-json",
+      "-",
+      "--stdout-json",
+    ]);
+
+    let stdout = "";
+    let stderr = "";
+
+    const timeout = setTimeout(() => {
+      proceso.kill();
+      reject(new Error("La simulacion Monte Carlo ha superado el tiempo limite"));
+    }, 90000);
+
+    proceso.stdout.on("data", (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    proceso.stderr.on("data", (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    proceso.on("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+
+    proceso.on("close", (code) => {
+      clearTimeout(timeout);
+      if (code !== 0) {
+        reject(new Error(stderr || `Python finalizo con codigo ${code}`));
+        return;
+      }
+
+      try {
+        resolve(JSON.parse(stdout));
+      } catch (error) {
+        reject(new Error("La simulacion Monte Carlo no devolvio JSON valido"));
+      }
+    });
+
+    proceso.stdin.write(JSON.stringify(payload));
+    proceso.stdin.end();
+  });
+
+const getMontecarloSimulacionManual = async (req, res) => {
+  try {
+    const temporada = parseEntero(req.body?.temporada);
+    const clasificacion = Array.isArray(req.body?.clasificacion)
+      ? req.body.clasificacion
+      : [];
+    const partidosSimulados = Array.isArray(req.body?.partidos_simulados)
+      ? req.body.partidos_simulados
+      : [];
+
+    if (!temporada) {
+      return res.status(400).json({ error: "Debes proporcionar una temporada" });
+    }
+
+    if (clasificacion.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "Debes proporcionar una clasificacion simulada" });
+    }
+
+    const partidosFijados = partidosSimulados
+      .filter((partido) => (
+        partido?.status !== "Completado" &&
+        parseEntero(partido?.id_partido) &&
+        parseNumero(partido?.goles_local, null) !== null &&
+        parseNumero(partido?.goles_visitante, null) !== null
+      ))
+      .map((partido) => parseEntero(partido.id_partido));
+
+    const queryPredicciones = `
+      SELECT
+        dp.id_partido,
+        dp.id_local,
+        dp.id_visitante,
+        dp.prob_victoria_local,
+        dp.prob_empate,
+        dp.prob_victoria_visitante
+      FROM dm_prediccion_partidos dp
+      JOIN dim_partidos p ON p.id_partido = dp.id_partido
+      WHERE p.temporada = $1
+        AND NOT (dp.id_partido = ANY($2::bigint[]))
+      ORDER BY dp.id_partido ASC;
+    `;
+
+    const prediccionesRes = await pool.query(queryPredicciones, [
+      temporada,
+      partidosFijados,
+    ]);
+
+    const equiposPayload = clasificacion.map((equipo) => ({
+      id_equipo: toIntOrNull(equipo.id_equipo),
+      nombre_equipo: equipo.nombre_equipo || equipo.equipo || equipo.codigo || "",
+      puntos: parseNumero(equipo.puntos, 0),
+      dg: parseNumero(equipo.dg, 0),
+    }));
+
+    const payloadPython = {
+      temporada,
+      equipos: equiposPayload,
+      predicciones: prediccionesRes.rows || [],
+    };
+
+    const resultadoPython = await ejecutarMontecarloManual(payloadPython);
+    const montecarloBase = Array.isArray(resultadoPython?.montecarlo)
+      ? resultadoPython.montecarlo
+      : [];
+    const idsEquipos = montecarloBase
+      .map((row) => toIntOrNull(row.id_equipo))
+      .filter((id) => id !== null);
+
+    const equiposRes = idsEquipos.length
+      ? await pool.query(
+          `
+          SELECT id_equipo, nombre_equipo, codigo, logo
+          FROM dim_equipo
+          WHERE id_equipo = ANY($1::int[])
+          `,
+          [idsEquipos],
+        )
+      : { rows: [] };
+
+    const equiposById = new Map(
+      (equiposRes.rows || []).map((equipo) => [
+        toIntOrNull(equipo.id_equipo),
+        equipo,
+      ]),
+    );
+    const posicionById = new Map(
+      clasificacion.map((equipo) => [
+        toIntOrNull(equipo.id_equipo),
+        toIntOrNull(equipo.posicion),
+      ]),
+    );
+
+    const montecarlo = montecarloBase
+      .map((row) => {
+        const idEquipo = toIntOrNull(row.id_equipo);
+        const equipo = equiposById.get(idEquipo) || {};
+        return {
+          ...row,
+          id_equipo: idEquipo,
+          nombre_equipo: equipo.nombre_equipo || row.nombre_equipo || row.equipo,
+          codigo: equipo.codigo || null,
+          logo: equipo.logo || null,
+          posicion: posicionById.get(idEquipo) ?? null,
+        };
+      })
+      .sort((a, b) => {
+        const posicionA = toIntOrNull(a.posicion) ?? 999;
+        const posicionB = toIntOrNull(b.posicion) ?? 999;
+        return posicionA - posicionB;
+      });
+
+    res.json({
+      temporada,
+      es_simulacion_manual: true,
+      partidos_fijados: partidosFijados.length,
+      montecarlo,
+    });
+  } catch (error) {
+    console.error("Error al ejecutar Monte Carlo manual:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
 const getSimulacionTemporadaInicial = async (_req, res) => {
   try {
     const temporadaActualResult = await pool.query(
@@ -1416,6 +1599,7 @@ module.exports = {
   getMontecarloTemporada,
   getSimulacionTemporadaInicial,
   getPartidosSimulacionJornada,
+  getMontecarloSimulacionManual,
   getGraficosTemporada,
   getPartidosTemporada,
   getEquiposTemporada,
