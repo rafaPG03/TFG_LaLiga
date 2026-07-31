@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function CustomHeader({ title, onMenuPress }) {
   const navigation = useNavigation();
+  const { colors, isDark } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState([]);
@@ -105,7 +107,7 @@ export default function CustomHeader({ title, onMenuPress }) {
           <Ionicons
             name={item.tipo === 'jugador' ? 'person-outline' : 'shield-outline'}
             size={18}
-            color="#1f6fa7"
+            color={colors.primary}
           />
         )}
       </View>
@@ -117,21 +119,24 @@ export default function CustomHeader({ title, onMenuPress }) {
           {item.secundario || 'Sin informacion'}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={16} color="#5f7f9b" />
+      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
     </TouchableOpacity>
   );
 
   return (
     <>
       <View style={styles.topBar}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.surface}
+        />
 
         <TouchableOpacity
           style={styles.iconButton}
           onPress={onMenuPress}
           activeOpacity={0.7}
         >
-          <Ionicons name="menu" size={28} color="#103a5d" />
+          <Ionicons name="menu" size={28} color={colors.text} />
         </TouchableOpacity>
 
         <Text style={styles.topBarTitle}>{title}</Text>
@@ -141,7 +146,7 @@ export default function CustomHeader({ title, onMenuPress }) {
           onPress={abrirModalBusqueda}
           activeOpacity={0.7}
         >
-          <Ionicons name="search" size={24} color="#103a5d" />
+          <Ionicons name="search" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -166,16 +171,16 @@ export default function CustomHeader({ title, onMenuPress }) {
                 onPress={cerrarModalBusqueda}
                 activeOpacity={0.75}
               >
-                <Ionicons name="close" size={18} color="#103a5d" />
+                <Ionicons name="close" size={18} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.inputRow}>
-              <Ionicons name="search" size={18} color="#5f7f9b" />
+              <Ionicons name="search" size={18} color={colors.textMuted} />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Buscar jugador o equipo"
-                placeholderTextColor="#8aa0b5"
+                placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}
                 value={searchText}
@@ -185,22 +190,22 @@ export default function CustomHeader({ title, onMenuPress }) {
 
             {isLoading ? (
               <View style={styles.feedbackState}>
-                <ActivityIndicator size="small" color="#1f6fa7" />
+                <ActivityIndicator size="small" color={colors.primary} />
                 <Text style={styles.feedbackText}>Buscando...</Text>
               </View>
             ) : searchText.trim().length < 2 ? (
               <View style={styles.feedbackState}>
-                <Ionicons name="search-outline" size={20} color="#5f7f9b" />
+                <Ionicons name="search-outline" size={20} color={colors.textMuted} />
                 <Text style={styles.feedbackText}>Escribe al menos 2 letras</Text>
               </View>
             ) : searchError ? (
               <View style={styles.feedbackState}>
-                <Ionicons name="cloud-offline-outline" size={20} color="#5f7f9b" />
+                <Ionicons name="cloud-offline-outline" size={20} color={colors.textMuted} />
                 <Text style={styles.feedbackText}>{searchError}</Text>
               </View>
             ) : results.length === 0 ? (
               <View style={styles.feedbackState}>
-                <Ionicons name="alert-circle-outline" size={20} color="#5f7f9b" />
+                <Ionicons name="alert-circle-outline" size={20} color={colors.textMuted} />
                 <Text style={styles.feedbackText}>No hay resultados para tu busqueda</Text>
               </View>
             ) : (

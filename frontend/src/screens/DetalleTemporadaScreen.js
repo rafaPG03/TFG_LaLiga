@@ -15,6 +15,7 @@ import InfoTab from '../components/temporadas/InfoTemporada';
 import RankingsTab from '../components/temporadas/RankingsTemporada';
 import AnalisisTab from '../components/temporadas/AnalisisTemporada';
 import EquiposTab from '../components/temporadas/EquiposTemporada';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -27,6 +28,7 @@ const getTemporadaLabel = (temporadaParam) => {
 };
 
 export default function DetalleTemporadaScreen({ navigation, route }) {
+	const { colors } = useTheme();
 	const temporadaParam = route?.params?.temporada;
 	const temporadaLabel = getTemporadaLabel(temporadaParam);
 
@@ -46,9 +48,9 @@ export default function DetalleTemporadaScreen({ navigation, route }) {
 					screenOptions={{
 						tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
 						tabBarIndicatorStyle: { backgroundColor: '#e20613' },
-						tabBarActiveTintColor: '#12233f',
-						tabBarInactiveTintColor: '#6f8096',
-						tabBarStyle: { backgroundColor: '#ffffff' },
+						tabBarActiveTintColor: colors.textStrong,
+						tabBarInactiveTintColor: colors.textMuted,
+						tabBarStyle: { backgroundColor: colors.surface },
 						tabBarItemStyle: { width: 140, paddingHorizontal: 12 },
 						tabBarScrollEnabled: true,
 						lazy: true,

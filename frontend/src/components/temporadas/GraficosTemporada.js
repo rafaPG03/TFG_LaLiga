@@ -21,6 +21,7 @@ import {
   VictoryScatter,
   VictoryStack,
 } from "victory-native";
+import { useTheme } from "../../theme/ThemeContext";
 
 const TODOS = "TODOS";
 const CHART_HEIGHT = 260;
@@ -170,7 +171,28 @@ const ChartShell = ({ width, height, children }) => (
 );
 
 export default function GraficosTemporada({ temporada }) {
+  const { colors } = useTheme();
   const { width } = useWindowDimensions();
+  const axisStyle = useMemo(
+    () => ({
+      axis: { stroke: colors.border },
+      axisLabel: { fill: colors.textMuted, fontSize: 11, padding: 32 },
+      tickLabels: { fill: colors.textMuted, fontSize: 10 },
+      grid: { stroke: colors.border, strokeWidth: 1 },
+    }),
+    [colors],
+  );
+  const defensiveAxisStyle = useMemo(
+    () => ({
+      ...axisStyle,
+      tickLabels: {
+        fill: colors.textMuted,
+        fontSize: 8,
+        lineHeight: 9,
+      },
+    }),
+    [axisStyle, colors],
+  );
   const temporadaBase = Number.isFinite(Number(temporada))
     ? Number(temporada)
     : null;
@@ -886,7 +908,7 @@ export default function GraficosTemporada({ temporada }) {
                   dy={-8}
                   textAnchor="middle"
                   style={{
-                    fill: COLORS.text,
+                    fill: colors.text,
                     fontSize: 8,
                     fontWeight: "900",
                   }}
@@ -1026,7 +1048,7 @@ export default function GraficosTemporada({ temporada }) {
                 <VictoryLabel
                   dy={-7}
                   textAnchor="middle"
-                  style={{ fill: COLORS.text, fontSize: 8, fontWeight: "700" }}
+                  style={{ fill: colors.text, fontSize: 8, fontWeight: "700" }}
                 />
               }
             />
@@ -1061,10 +1083,8 @@ export default function GraficosTemporada({ temporada }) {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Graficos temporada</Text>
             <Text style={styles.subtitle}>
               Temporada {temporadaBase}{" "}
-              {data.jornada_maxima ? `- Jornada ${data.jornada_maxima}` : ""}
             </Text>
           </View>
           <TouchableOpacity
@@ -1083,25 +1103,24 @@ export default function GraficosTemporada({ temporada }) {
           </TouchableOpacity>
         </View>
 
-        {renderSection("KPIs globales", selectedLabel, renderKpis())}
+        {renderSection("Estadísticas globales", selectedLabel, renderKpis())}
         {renderSection(
-          "Rendimiento vs año pasado",
+          "Rendimiento actual vs año pasado",
           null,
           renderRendimientoPasado(),
         )}
         {renderSection(
           "Cuadrante de goles",
-          "Eje X: goles favor - Eje Y: goles contra",
           renderTeamQuadrant(),
         )}
         {renderSection(
           "Rendimiento de jugadores",
-          `Top/bottom por nota media y corte de ${MINUTOS_RENDIMIENTO} minutos - ${eligibilityText}`,
+          `Top/bottom por nota media y corte de ${MINUTOS_RENDIMIENTO} minutos`,
           renderPlayerPerformance(),
         )}
         {renderSection(
           "Acciones defensivas",
-          `Top 7 por volumen defensivo - ${eligibilityText}`,
+          `Top 7 por volumen defensivo`,
           <>
             <View style={styles.legendRow}>
               <Text style={[styles.legendItem, { color: COLORS.blue }]}>
@@ -1118,13 +1137,12 @@ export default function GraficosTemporada({ temporada }) {
           </>,
         )}
         {renderSection(
-          "Mediocentros",
-          `Lideres de creacion - ${eligibilityText}`,
+          "Lideres de creacion",
           renderMidfieldBadges(),
         )}
         {renderSection(
-          "Delanteros",
-          `Goles vs tiros totales - ${eligibilityText}`,
+          "Eficiencia goleadora",
+          `Goles vs tiros totales`,
           renderAttackersScatter(),
         )}
       </ScrollView>
@@ -1201,22 +1219,6 @@ export default function GraficosTemporada({ temporada }) {
     </View>
   );
 }
-
-const axisStyle = {
-  axis: { stroke: "#c8d7e6" },
-  axisLabel: { fill: COLORS.muted, fontSize: 11, padding: 32 },
-  tickLabels: { fill: COLORS.muted, fontSize: 10 },
-  grid: { stroke: "#edf3f8", strokeWidth: 1 },
-};
-
-const defensiveAxisStyle = {
-  ...axisStyle,
-  tickLabels: {
-    fill: COLORS.muted,
-    fontSize: 8,
-    lineHeight: 9,
-  },
-};
 
 const styles = StyleSheet.create({
   container: {

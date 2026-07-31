@@ -1,8 +1,10 @@
 import React, {useState} from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, KeyboardAvoidingView, Platform, TextInput, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
+import { useTheme } from '../theme/ThemeContext';
 
 export default function RegistroScreen({ navigation }) {
+    const { colors } = useTheme();
     // Estados para guardar lo que escribe el usuario
     const [usuario, setUsuario] = useState('');
     const [email, setEmail] = useState('');
@@ -89,7 +91,7 @@ export default function RegistroScreen({ navigation }) {
                     <TextInput
                         style={styles.input}
                         placeholder="Usuario"
-                        placeholderTextColor="#A0A0A0"
+                        placeholderTextColor={colors.textMuted}
                         value ={usuario}
                         onChangeText={setUsuario}
                     />
@@ -100,7 +102,7 @@ export default function RegistroScreen({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="Correo Electrónico"
-                    placeholderTextColor="#A0A0A0"
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="email-address"
                     autoCapitalize="none" // Importante para emails
                     value={email}
@@ -114,7 +116,7 @@ export default function RegistroScreen({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="••••••••"
-                    placeholderTextColor="#A0A0A0"
+                    placeholderTextColor={colors.textMuted}
                     secureTextEntry={!mostrarPassword} // Si mostrar es false, se oculta
                     value={password}
                     onChangeText={setPassword}
@@ -127,7 +129,7 @@ export default function RegistroScreen({ navigation }) {
                     <Ionicons 
                     name={mostrarPassword ? "eye-off" : "eye"} 
                     size={24} 
-                    color="#2e86de" 
+                    color={colors.primaryBright}
                     />
                 </TouchableOpacity>
                 </View>
@@ -137,7 +139,7 @@ export default function RegistroScreen({ navigation }) {
                 <TextInput
                     style={styles.input}
                     placeholder="Confirma la contraseña"
-                    placeholderTextColor="#A0A0A0"
+                    placeholderTextColor={colors.textMuted}
                     secureTextEntry={!mostrarPassword} // Si mostrar es false, se oculta
                     value={Confpassword}
                     onChangeText={setConfPassword}
@@ -150,7 +152,7 @@ export default function RegistroScreen({ navigation }) {
                     <Ionicons 
                     name={mostrarPassword ? "eye-off" : "eye"} 
                     size={24} 
-                    color="#2e86de" 
+                    color={colors.primaryBright}
                     />
                 </TouchableOpacity>
                 </View>

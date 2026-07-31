@@ -23,10 +23,12 @@ import PreviaTab from '../components/partido/PreviaPartido';
 import AlineacionTab from '../components/partido/AlineacionPartido';
 import EventosTab from '../components/partido/EventosPartido';
 import PostPartidoTab from '../components/partido/PostPartido';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createMaterialTopTabNavigator();
 
 export default function DetallePartidoScreen({navigation, route}) {
+   const { colors } = useTheme();
    const id_partido = route.params?.id_partido ?? route.params?.idpartido;
    const [loading, setLoading] = useState(true);
    const [partidoInfo, setPartidoInfo] = useState(null);
@@ -136,9 +138,9 @@ export default function DetallePartidoScreen({navigation, route}) {
          screenOptions={{
             tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
             tabBarIndicatorStyle: { backgroundColor: '#e20613' }, // Rojo LaLiga
-            tabBarActiveTintColor: '#12233f',
-            tabBarInactiveTintColor: '#6f8096',
-            tabBarStyle: { backgroundColor: '#ffffff' },
+            tabBarActiveTintColor: colors.textStrong,
+            tabBarInactiveTintColor: colors.textMuted,
+            tabBarStyle: { backgroundColor: colors.surface },
             tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
             tabBarScrollEnabled: true,
             lazy: true,

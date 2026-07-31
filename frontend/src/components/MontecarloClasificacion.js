@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../theme/ThemeContext';
+import { resolveThemeColor } from '../theme/themeRuntime';
 
 const COL_TEAM = 86;
 const COL_PROB = 58;
@@ -73,6 +75,7 @@ const getProbBackground = (valor, palette) => {
 
 export default function MontecarloClasificacion({ temporada, equipoId }) {
   const navigation = useNavigation();
+  const { colors, isDark } = useTheme();
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [rows, setRows] = useState([]);
@@ -156,10 +159,17 @@ export default function MontecarloClasificacion({ temporada, equipoId }) {
             key={col.key}
             style={[
               styles.probCell,
-              { backgroundColor: getProbBackground(row[col.key], col.palette) },
+              {
+                backgroundColor: resolveThemeColor(
+                  getProbBackground(row[col.key], col.palette),
+                  'backgroundColor'
+                ),
+              },
             ]}
           >
-            <Text style={styles.probText}>{formatPct(row[col.key])}</Text>
+            <Text style={[styles.probText, isDark && { color: colors.textStrong }]}>
+              {formatPct(row[col.key])}
+            </Text>
           </View>
         ))}
       </TouchableOpacity>

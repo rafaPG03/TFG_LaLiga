@@ -20,6 +20,7 @@ import {
   VictoryScatter,
   VictoryStack,
 } from "victory-native";
+import { useTheme } from "../../../theme/ThemeContext";
 
 const COLORS = {
   local: "#1f6fa7",
@@ -36,16 +37,6 @@ const COLORS = {
 
 const CHART_HEIGHT = 270;
 const TALL_CHART_HEIGHT = 320;
-const CHART_LABEL_STYLE = {
-  fill: COLORS.text,
-  fontSize: 8,
-  fontWeight: "800",
-};
-const POINT_LABEL_STYLE = {
-  fill: COLORS.text,
-  fontSize: 8,
-  fontWeight: "900",
-};
 const IMPACT_MODES = [
   { key: "ataque", label: "Ataque" },
   { key: "creacion", label: "Creación" },
@@ -190,6 +181,15 @@ const ChartCard = ({ title, subtitle, children }) => (
 );
 
 export default function AnalisisGraficas({ route }) {
+  const { colors } = useTheme();
+  const CHART_LABEL_STYLE = useMemo(
+    () => ({ fill: colors.text, fontSize: 8, fontWeight: "800" }),
+    [colors],
+  );
+  const POINT_LABEL_STYLE = useMemo(
+    () => ({ fill: colors.text, fontSize: 8, fontWeight: "900" }),
+    [colors],
+  );
   const { id_partido, partidoInfo, datosEquipo } = route.params || {};
   const { width } = useWindowDimensions();
   const screenWidth = Number.isFinite(Number(width)) ? Number(width) : 360;
@@ -249,15 +249,15 @@ export default function AnalisisGraficas({ route }) {
   );
 
   const axisStyle = {
-    axis: { stroke: COLORS.border },
+    axis: { stroke: colors.border },
     axisLabel: {
-      fill: COLORS.muted,
+      fill: colors.textMuted,
       fontSize: 10,
       fontWeight: "700",
       padding: 28,
     },
-    tickLabels: { fill: COLORS.muted, fontSize: 9, padding: 4 },
-    grid: { stroke: "#edf3f8", strokeDasharray: "4,4" },
+    tickLabels: { fill: colors.textMuted, fontSize: 9, padding: 4 },
+    grid: { stroke: colors.border, strokeDasharray: "4,4" },
   };
 
   const renderLegend = () => (
@@ -373,7 +373,7 @@ export default function AnalisisGraficas({ route }) {
               style={{
                 ...axisStyle,
                 tickLabels: {
-                  fill: COLORS.text,
+                  fill: colors.text,
                   fontSize: 8,
                   fontWeight: "800",
                   padding: 8,
@@ -458,7 +458,7 @@ export default function AnalisisGraficas({ route }) {
                 axis: { stroke: COLORS.border },
                 grid: { stroke: COLORS.border },
                 tickLabels: {
-                  fill: COLORS.text,
+                  fill: colors.text,
                   fontSize: 9,
                   fontWeight: "700",
                   padding: 10,
@@ -725,7 +725,7 @@ export default function AnalisisGraficas({ route }) {
               style={{
                 ...axisStyle,
                 tickLabels: {
-                  fill: COLORS.muted,
+                  fill: colors.textMuted,
                   fontSize: 8,
                   padding: 8,
                 },

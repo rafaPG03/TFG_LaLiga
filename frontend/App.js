@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -15,6 +15,7 @@ import EquiposScreen from './src/screens/EquiposScreen';
 import JugadoresScreen from './src/screens/JugadoresScreen';
 import PartidosScreen from './src/screens/PartidosScreen';
 import SimulacionTemporadaScreen from './src/screens/SimulacionTemporadaScreen';
+import AnalisisIAScreen from './src/screens/AnalisisIAScreen';
 import AjustesScreen from './src/screens/AjustesScreen';
 import DetalleEquipoScreen from './src/screens/DetalleEquipoScreen';
 import DetalleJugadorScreen from './src/screens/DetalleJugadorScreen';  
@@ -26,6 +27,7 @@ import CambiarContrasenaScreen from './src/screens/CambiarContraseñaScreen';
 import CustomDrawer from './src/components/menu';
 import AgenteDeOro from './src/components/agente/AgenteDeOro';
 import { FavoritosProvider } from './src/context/FavoritosContext';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -41,6 +43,7 @@ const AGENTE_ROUTES_PERMITIDAS = new Set([
   'Partidos',
   'DetallePartido',
   'SimulacionTemporada',
+  'AnalisisIA',
 ]);
 
 const obtenerRutaActiva = (state) => {
@@ -63,12 +66,19 @@ const obtenerRutaActiva = (state) => {
 
 // 1. Definimos el Menú Lateral primero
 function DrawerNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Drawer.Navigator 
       drawerContent={(props) => <CustomDrawer {...props} />}
-      screenOptions={{ headerShown: false }} // Usamos tu CustomHeader
+      screenOptions={{
+        headerShown: false,
+        drawerStyle: { backgroundColor: colors.background },
+        sceneStyle: { backgroundColor: colors.background },
+      }} // Usamos tu CustomHeader
     >
       <Drawer.Screen name="Inicio" component={InicioScreen} />
+      <Drawer.Screen name="AnalisisIA" component={AnalisisIAScreen} />
       <Drawer.Screen name="Temporadas" component={TemporadaScreen} />
       <Drawer.Screen name="DetalleTemporada" component={DetalleTemporadaScreen} />
       <Drawer.Screen name="Equipos" component={EquiposScreen} />
@@ -87,7 +97,8 @@ function DrawerNavigator() {
 }
 
 // 2. Navegador Principal (Stack)
-export default function App() {
+function AppContent() {
+  const { colors, isDark, isThemeReady, navigationTheme } = useTheme();
   const [cargandoSesion, setCargandoSesion] = useState(true);
   const [haySesion, setHaySesion] = useState(false);
   const navigationRef = useRef(null);
@@ -108,10 +119,21 @@ export default function App() {
     restaurarSesion();
   }, []);
 
-  if (cargandoSesion) {
+  if (!isThemeReady || cargandoSesion) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#1f6fa7" />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.background,
+        }}
+      >
+        <StatusBar
+          barStyle={isDark ? 'light-content' : 'dark-content'}
+          backgroundColor={colors.surface}
+        />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -119,9 +141,14 @@ export default function App() {
   const agenteVisible = AGENTE_ROUTES_PERMITIDAS.has(rutaActiva);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.surface}
+      />
       <FavoritosProvider>
         <NavigationContainer
+          theme={navigationTheme}
           ref={navigationRef}
           onReady={() => {
             setRutaActiva(obtenerRutaActiva(navigationRef.current?.getRootState()));
@@ -147,5 +174,13 @@ export default function App() {
         </NavigationContainer>
       </FavoritosProvider>
     </GestureHandlerRootView>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

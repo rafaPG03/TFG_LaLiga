@@ -3,10 +3,12 @@ import { View } from "react-native";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import GraficosEquipo from "./GraficosEquipo";
 import GraficosJugadoresEquipo from "./GraficosJugadoresEquipo";
+import { useTheme } from "../../theme/ThemeContext";
 
 const Tab = createMaterialTopTabNavigator();
 
 export default function AnalisisEquipo({ id_equipo }) {
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1, backgroundColor: "#f4f8fc" }}>
       <Tab.Navigator
@@ -17,9 +19,9 @@ export default function AnalisisEquipo({ id_equipo }) {
             textAlign: "center",
           },
           tabBarIndicatorStyle: { backgroundColor: "#e20613" },
-          tabBarActiveTintColor: "#12233f",
-          tabBarInactiveTintColor: "#6f8096",
-          tabBarStyle: { backgroundColor: "#ffffff" },
+          tabBarActiveTintColor: colors.textStrong,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarStyle: { backgroundColor: colors.surface },
           tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
           tabBarScrollEnabled: false,
           lazy: true,

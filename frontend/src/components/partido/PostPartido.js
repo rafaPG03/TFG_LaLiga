@@ -6,9 +6,11 @@ import { createMaterialTopTabNavigator } from "@react-navigation/material-top-ta
 import AnalisisEquipoTab from "./PostPartidoAnalisis/AnalisisEquipo";
 import AnalisisJugadorTab from "./PostPartidoAnalisis/AnalisisJugador";
 import GraficasTab from "./PostPartidoAnalisis/AnalisisGraficas";
+import { useTheme } from "../../theme/ThemeContext";
 const Tab = createMaterialTopTabNavigator();
 
 export default function PostPartidoTab({ route }) {
+  const { colors } = useTheme();
   const { id_partido, partidoInfo } = route.params || {};
   const [loading, setLoading] = useState(true);
   const [datosEquipo, setDatosEquipo] = useState(null);
@@ -51,9 +53,10 @@ export default function PostPartidoTab({ route }) {
         <Tab.Navigator
           screenOptions={({ route }) => ({
             tabBarShowLabel: false, // Oculta el texto para que solo se vea el icono
-            tabBarActiveTintColor: "#12233F", // Color del icono seleccionado
-            tabBarInactiveTintColor: "#8E8E93", // Color del icono no seleccionado
-            tabBarIndicatorStyle: { backgroundColor: "#12233F" }, // Línea inferior
+            tabBarActiveTintColor: colors.textStrong, // Color del icono seleccionado
+            tabBarInactiveTintColor: colors.textMuted, // Color del icono no seleccionado
+            tabBarIndicatorStyle: { backgroundColor: colors.primary }, // Línea inferior
+            tabBarStyle: { backgroundColor: colors.surface },
             tabBarIcon: ({ color, focused }) => {
               let iconName;
 

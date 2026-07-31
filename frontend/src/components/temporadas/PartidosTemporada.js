@@ -216,7 +216,6 @@ export default function PartidosTemporada({ temporada }) {
       </View>
 
       <View style={styles.bloqueDropdown}>
-        <Text style={styles.labelDropdown}>Jornada</Text>
         <TouchableOpacity
           style={styles.selectorDropdown}
           onPress={() => setJornadaAbierta((prev) => !prev)}

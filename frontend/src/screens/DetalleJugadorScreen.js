@@ -19,6 +19,7 @@ import TrayectoriaTab from '../components/jugadores/TrayectoriaJugador';
 import StatsJugTab from '../components/jugadores/StatsJugador';
 import AtributosTab from '../components/jugadores/AtributosJugador';
 import FavoritoButton from '../components/FavoritoButton';
+import { useTheme } from '../theme/ThemeContext';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -33,6 +34,7 @@ const JUGADOR_FALLBACK = {
 };
 
 export default function DetalleJugadorScreen({navigation, route}) {
+   const { colors } = useTheme();
    const id_jugador = route?.params?.id_jugador ?? route?.params?.idjugador ?? route?.params?.id;
    const [loading, setLoading] = useState(true);
    const [jugadorInfo, setJugadorInfo] = useState(null);
@@ -67,7 +69,7 @@ export default function DetalleJugadorScreen({navigation, route}) {
    if (loading) {
       return (
          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#0000ff" />
+            <ActivityIndicator size="large" color={colors.primary} />
          </View>
       );
    }
@@ -125,9 +127,9 @@ export default function DetalleJugadorScreen({navigation, route}) {
          screenOptions={{
             tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
             tabBarIndicatorStyle: { backgroundColor: '#e20613' }, // Rojo LaLiga
-            tabBarActiveTintColor: '#12233f',
-                  tabBarInactiveTintColor: '#6f8096',
-                  tabBarStyle: { backgroundColor: '#ffffff' },
+            tabBarActiveTintColor: colors.textStrong,
+                  tabBarInactiveTintColor: colors.textMuted,
+                  tabBarStyle: { backgroundColor: colors.surface },
                tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
                tabBarScrollEnabled: true,
                   lazy: true,

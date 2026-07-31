@@ -15,6 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import CustomHeader from '../components/header';
+import { useTheme } from '../theme/ThemeContext';
+import { resolveThemeColor } from '../theme/themeRuntime';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -332,7 +334,6 @@ function ResultadosTab({
         <View style={styles.panelHeader}>
           <View>
             <Text style={styles.panelTitle}>Partidos de la jornada {jornadaSeleccionada || '-'}</Text>
-            <Text style={styles.panelSubtitle}>Resultados reales y pendientes</Text>
           </View>
           <Ionicons name="football-outline" size={20} color="#1f6fa7" />
         </View>
@@ -372,6 +373,7 @@ function ClasificacionTab({
   errorMontecarlo,
   onEjecutarMontecarlo,
 }) {
+  const { colors, isDark } = useTheme();
   const [vistaResultado, setVistaResultado] = useState('CLASIFICACION');
 
   const renderEquipo = (row) => {
@@ -462,10 +464,17 @@ function ClasificacionTab({
                   key={col.key}
                   style={[
                     styles.probCell,
-                    { backgroundColor: getProbBackground(row[col.key], col.palette) },
+                    {
+                      backgroundColor: resolveThemeColor(
+                        getProbBackground(row[col.key], col.palette),
+                        'backgroundColor'
+                      ),
+                    },
                   ]}
                 >
-                  <Text style={styles.probText}>{formatPct(row[col.key])}</Text>
+                  <Text style={[styles.probText, isDark && { color: colors.textStrong }]}>
+                    {formatPct(row[col.key])}
+                  </Text>
                 </View>
               ))}
             </TouchableOpacity>
@@ -556,6 +565,7 @@ function ClasificacionTab({
 }
 
 export default function SimulacionTemporadaScreen({ navigation }) {
+  const { colors } = useTheme();
   const [temporada, setTemporada] = useState(null);
   const [jornadas, setJornadas] = useState([]);
   const [jornadaSeleccionada, setJornadaSeleccionada] = useState(null);
@@ -727,10 +737,10 @@ export default function SimulacionTemporadaScreen({ navigation }) {
   const tabBarOptions = useMemo(() => ({
     tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center' },
     tabBarIndicatorStyle: { backgroundColor: '#e20613' },
-    tabBarActiveTintColor: '#12233f',
-    tabBarInactiveTintColor: '#6f8096',
-    tabBarStyle: { backgroundColor: '#ffffff' },
-  }), []);
+    tabBarActiveTintColor: colors.textStrong,
+    tabBarInactiveTintColor: colors.textMuted,
+    tabBarStyle: { backgroundColor: colors.surface },
+  }), [colors]);
 
   if (cargandoInicial) {
     return (

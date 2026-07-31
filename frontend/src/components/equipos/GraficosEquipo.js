@@ -24,6 +24,8 @@ import {
   VictoryScatter,
   VictoryStack,
 } from "victory-native";
+import { useTheme } from "../../theme/ThemeContext";
+import { resolveThemeColor } from "../../theme/themeRuntime";
 
 const COLORS = {
   red: "#e20613",
@@ -137,7 +139,17 @@ const makeSummary = (rows) =>
 
 export default function GraficosEquipo({ id_equipo }) {
   const navigation = useNavigation();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
+  const chartAxisStyle = useMemo(
+    () => ({
+      axis: { stroke: colors.border },
+      axisLabel: { fill: colors.text, fontSize: 11, padding: 32 },
+      tickLabels: { fill: colors.textMuted, fontSize: 10, angle: 0 },
+      grid: { stroke: colors.border, strokeWidth: 1 },
+    }),
+    [colors],
+  );
   const screenWidth = Number.isFinite(Number(width)) ? Number(width) : 360;
   const chartWidth = Math.max(280, Math.min(screenWidth - 32, 720));
 
@@ -597,17 +609,20 @@ export default function GraficosEquipo({ id_equipo }) {
                 style={[
                   styles.montecarloProbCell,
                   {
-                    backgroundColor: getProbBackground(
-                      montecarlo[col.key],
-                      col.palette,
+                    backgroundColor: resolveThemeColor(
+                      getProbBackground(montecarlo[col.key], col.palette),
+                      "backgroundColor",
                     ),
                   },
                 ]}
               >
-                <Text style={styles.montecarloProbLabel} numberOfLines={1}>
+                <Text
+                  style={[styles.montecarloProbLabel, isDark && { color: colors.textStrong }]}
+                  numberOfLines={1}
+                >
                   {col.label}
                 </Text>
-                <Text style={styles.montecarloProbValue}>
+                <Text style={[styles.montecarloProbValue, isDark && { color: colors.textStrong }]}>
                   {formatPct(montecarlo[col.key])}
                 </Text>
               </View>
@@ -618,9 +633,6 @@ export default function GraficosEquipo({ id_equipo }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Posición durante la temporada</Text>
-        <Text style={styles.sectionSubtitle}>
-          1 es mejor posición. La línea muestra la evolución jornada a jornada.
-        </Text>
         {positionLineData.length > 0 ? (
           <ChartShell width={chartWidth} height={CHART_HEIGHT}>
             <VictoryChart
@@ -635,13 +647,13 @@ export default function GraficosEquipo({ id_equipo }) {
             >
               <VictoryAxis
                 label="Jornada"
-                style={styles.axis}
+                style={chartAxisStyle}
                 tickFormat={(tick) => `${tick}`}
               />
               <VictoryAxis
                 dependentAxis
                 label="Posición"
-                style={styles.axis}
+                style={chartAxisStyle}
                 tickValues={[1, 5, 10, 15, 20]}
               />
               <VictoryLine
@@ -663,7 +675,7 @@ export default function GraficosEquipo({ id_equipo }) {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Radar del equipo</Text>
+        <Text style={styles.sectionTitle}>Habilidades del equipo</Text>
         <Text style={styles.sectionSubtitle}>
           Perfil estadístico medio de los jugadores con partidos en la
           temporada.
@@ -685,7 +697,7 @@ export default function GraficosEquipo({ id_equipo }) {
                   axis: { stroke: COLORS.border },
                   grid: { stroke: COLORS.border },
                   tickLabels: {
-                    fill: COLORS.text,
+                    fill: colors.text,
                     fontSize: 9,
                     fontWeight: "700",
                     padding: 10,
@@ -696,7 +708,7 @@ export default function GraficosEquipo({ id_equipo }) {
                 dependentAxis
                 tickValues={[2, 4, 6, 8, 10]}
                 tickFormat={(tick) => `${tick}`}
-                style={styles.axis}
+                style={chartAxisStyle}
               />
               <VictoryArea
                 data={radarData}
@@ -720,11 +732,9 @@ export default function GraficosEquipo({ id_equipo }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          Victorias, empates y derrotas por nivel de rival
+          Rendimiento según nivel de rival
         </Text>
-        <Text style={styles.sectionSubtitle}>
-          Top 6, tramo medio y zona baja de la clasificación.
-        </Text>
+
         {bandas.length > 0 ? (
           <ChartShell width={chartWidth} height={CHART_HEIGHT}>
             <VictoryChart
@@ -734,8 +744,8 @@ export default function GraficosEquipo({ id_equipo }) {
               domainPadding={{ x: 24, y: 20 }}
               padding={{ top: 18, left: 48, right: 20, bottom: 48 }}
             >
-              <VictoryAxis style={styles.axis} />
-              <VictoryAxis dependentAxis style={styles.axis} />
+              <VictoryAxis style={chartAxisStyle} />
+              <VictoryAxis dependentAxis style={chartAxisStyle} />
               <VictoryStack>
                 <VictoryBar
                   data={bandas.map((item) => ({
@@ -802,8 +812,8 @@ export default function GraficosEquipo({ id_equipo }) {
             domainPadding={{ x: 22, y: 20 }}
             padding={{ top: 18, left: 48, right: 20, bottom: 48 }}
           >
-            <VictoryAxis style={styles.axis} />
-            <VictoryAxis dependentAxis style={styles.axis} />
+            <VictoryAxis style={chartAxisStyle} />
+            <VictoryAxis dependentAxis style={chartAxisStyle} />
             <VictoryGroup offset={16}>
               <VictoryBar
                 data={comparativaLocalVisitante.map((item) => ({
@@ -872,9 +882,7 @@ export default function GraficosEquipo({ id_equipo }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Últimos 5 partidos</Text>
-        <Text style={styles.sectionSubtitle}>
-          Mini-cards con resultado, rival y marcador.
-        </Text>
+
         {ultimosPartidos.length > 0 ? (
           <ScrollView
             horizontal

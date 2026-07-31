@@ -12,11 +12,13 @@ import { CommonActions } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFavoritos } from '../context/FavoritosContext';
+import { useTheme } from '../theme/ThemeContext';
 
 const SESSION_KEY = '@tfg/session';
 
 const MENU_OPTIONS = [
 	{ label: 'Inicio', route: 'Inicio', icon: 'home-outline' },
+	{ label: 'Análisis IA', route: 'AnalisisIA', icon: 'sparkles-outline' },
 	{ label: 'Temporadas', route: 'Temporadas', icon: 'calendar-outline' },
 	{ label: 'Equipos', route: 'Equipos', icon: 'shield-outline' },
 	{ label: 'Jugadores', route: 'Jugadores', icon: 'people-outline' },
@@ -26,6 +28,7 @@ const MENU_OPTIONS = [
 
 export default function CustomDrawer(props) {
 	const { refreshSession } = useFavoritos();
+	const { colors } = useTheme();
 	const [nombreUsuario, setNombreUsuario] = useState('Usuario');
 	const [idUsuario, setIdUsuario] = useState(null);
 
@@ -96,7 +99,7 @@ const irAPantalla = (route) => {
 					<MaterialCommunityIcons
 						name="account-circle"
 						size={74}
-						color="#1f6fa7"
+						color={colors.primary}
 						style={styles.avatar}
 					/>
 					<Text style={styles.profileName}>{nombreUsuario}</Text>
@@ -118,7 +121,7 @@ const irAPantalla = (route) => {
 								<Ionicons
 									name={item.icon}
 									size={20}
-									color={focused ? '#0f4f7e' : '#57758f'}
+									color={focused ? colors.primary : colors.textMuted}
 								/>
 								<Text style={[styles.menuItemText, focused && styles.menuItemTextActive]}>
 									{item.label}
@@ -135,7 +138,7 @@ const irAPantalla = (route) => {
 					onPress={() => irAPantalla('Ajustes')}
 					activeOpacity={0.8}
 				>
-					<Ionicons name="settings-outline" size={19} color="#35566f" />
+					<Ionicons name="settings-outline" size={19} color={colors.text} />
 					<Text style={styles.secondaryActionText}>Ajustes</Text>
 				</TouchableOpacity>
 

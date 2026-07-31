@@ -15,11 +15,13 @@ import {
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFavoritos } from '../context/FavoritosContext';
+import { useTheme } from '../theme/ThemeContext';
 
 const SESSION_KEY = '@tfg/session';
 
 export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
   const { refreshSession } = useFavoritos();
+  const { colors, isDark } = useTheme();
   // Estados para guardar lo que escribe el usuario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +65,10 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.surface}
+      />
       
       {/* ScrollView permite hacer scroll si la pantalla es pequeña */}
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -88,7 +93,7 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
             <TextInput
               style={styles.input}
               placeholder="Introduce tu nombre de usuario o correo electrónico"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor={colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none" // Importante para emails
               value={email}
@@ -102,7 +107,7 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
             <TextInput
               style={styles.input}
               placeholder="••••••••"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor={colors.textMuted}
               secureTextEntry={!mostrarPassword} // Si mostrar es false, se oculta
               value={password}
               onChangeText={setPassword}
@@ -116,7 +121,7 @@ export default function LoginScreen({ navigation }) { // <--- Añade esto aquí
               <Ionicons 
                 name={mostrarPassword ? "eye-off" : "eye"} 
                 size={24} 
-                color="#2e86de" 
+                color={colors.primaryBright}
               />
             </TouchableOpacity>
           </View>

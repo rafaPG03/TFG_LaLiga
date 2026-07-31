@@ -19,6 +19,7 @@ import TrayectoriaEquipo from "../components/equipos/trayectoriaEquipo";
 import ClasificacionEquipo from "../components/equipos/clasificacionEquipo";
 import InfoEquipo from "../components/equipos/infoEquipo";
 import AnalisisEquipo from "../components/equipos/AnalisisEquipo";
+import { useTheme } from "../theme/ThemeContext";
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -43,6 +44,7 @@ function PlaceholderTab({ label }) {
 }
 
 export default function DetalleEquipoScreen({ navigation, route }) {
+  const { colors } = useTheme();
   const idEquipo =
     route?.params?.idEquipo ?? route?.params?.id ?? route?.params?.id_equipo;
   const [loading, setLoading] = useState(true);
@@ -83,7 +85,7 @@ export default function DetalleEquipoScreen({ navigation, route }) {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1f6fa7" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -153,9 +155,9 @@ export default function DetalleEquipoScreen({ navigation, route }) {
             textAlign: "center",
           },
           tabBarIndicatorStyle: { backgroundColor: "#e20613" },
-          tabBarActiveTintColor: "#12233f",
-          tabBarInactiveTintColor: "#6f8096",
-          tabBarStyle: { backgroundColor: "#ffffff" },
+          tabBarActiveTintColor: colors.textStrong,
+          tabBarInactiveTintColor: colors.textMuted,
+          tabBarStyle: { backgroundColor: colors.surface },
           tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
           tabBarScrollEnabled: true,
           lazy: true,

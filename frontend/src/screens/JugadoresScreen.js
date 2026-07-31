@@ -18,9 +18,11 @@ import CustomHeader from '../components/header';
 import { FlatList} from 'react-native-gesture-handler';
 import FavoritoButton from '../components/FavoritoButton';
 import { useFavoritos } from '../context/FavoritosContext';
+import { useTheme } from '../theme/ThemeContext';
 
 export default function JugadoresScreen({navigation}) {
    const { jugadoresFav } = useFavoritos();
+   const { colors } = useTheme();
    const [listaMasPartidos, setListaMasPartidos] = useState([]);
    const [listaJugadores, setListaJugadores] = useState([]);
    const [textoBusqueda, setTextoBusqueda] = useState('');
@@ -157,6 +159,7 @@ export default function JugadoresScreen({navigation}) {
             <TextInput 
                style={styles.buscadorInput} 
                placeholder="Buscar jugadores..." 
+               placeholderTextColor={colors.textMuted}
                editable={true} 
                value={textoBusqueda}
                onChangeText={handleBusqueda}
