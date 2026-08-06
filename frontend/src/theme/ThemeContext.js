@@ -13,6 +13,7 @@ export const lightColors = {
   input: '#f5f5f5',
   text: '#103a5d',
   textStrong: '#12233f',
+  textScattered: '#1f4f7a',
   textMuted: '#59778f',
   border: '#d9e5f0',
   primary: '#1f6fa7',

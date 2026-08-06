@@ -291,6 +291,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     listaTemporadas: {
+        marginBottom: 10,
         paddingBottom: 10,
         gap: 8,
     },

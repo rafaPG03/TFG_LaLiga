@@ -265,6 +265,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 10,
+    marginTop: 6,
   },
   montecarloInfoText: {
     flex: 1,

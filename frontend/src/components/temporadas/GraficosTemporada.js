@@ -171,7 +171,7 @@ const ChartShell = ({ width, height, children }) => (
 );
 
 export default function GraficosTemporada({ temporada }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
   const axisStyle = useMemo(
     () => ({
@@ -908,7 +908,7 @@ export default function GraficosTemporada({ temporada }) {
                   dy={-8}
                   textAnchor="middle"
                   style={{
-                    fill: colors.text,
+                    fill: colors.textStrong,
                     fontSize: 8,
                     fontWeight: "900",
                   }}
@@ -1035,6 +1035,13 @@ export default function GraficosTemporada({ temporada }) {
             <VictoryScatter
               data={dataAtacantes}
               size={0}
+              style={{
+                labels: {
+                  fill: isDark ? colors.textStrong : colors.text,
+                  fontSize: 8,
+                  fontWeight: "800",
+                },
+              }}
               labels={({ datum }) => {
                 if (selectedEquipoId === TODOS) {
                   return datum.goles > 10 ? getInitials(datum.nombre) : "";
@@ -1048,7 +1055,6 @@ export default function GraficosTemporada({ temporada }) {
                 <VictoryLabel
                   dy={-7}
                   textAnchor="middle"
-                  style={{ fill: colors.text, fontSize: 8, fontWeight: "700" }}
                 />
               }
             />
@@ -1057,7 +1063,12 @@ export default function GraficosTemporada({ temporada }) {
         <View style={styles.attackList}>
           {tablaAtacantes.map((jugador) => (
             <View key={`atk-${jugador.id_jugador}`} style={styles.attackRow}>
-              <Text style={styles.attackInitials}>
+              <Text
+                style={[
+                  styles.attackInitials,
+                  isDark && { color: colors.textStrong },
+                ]}
+              >
                 {getInitials(jugador.nombre)}
               </Text>
               <Text style={styles.attackName}>{jugador.nombre}</Text>

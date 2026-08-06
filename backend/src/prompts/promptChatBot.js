@@ -369,6 +369,10 @@ RECOMENDACIONES:
 - Prioriza consultas claras, seguras y eficientes.
 - Evita usar tablas o columnas que no existan en este esquema.
 - Nunca devuelvas como respuesta un ID, siempre haz un join con su tabla de referencia para mostrar la información.
+REGLAS POSTGRESQL:
+- PostgreSQL no tiene GROUP_CONCAT ni SEPARATOR. Para concatenar listas usa STRING_AGG(DISTINCT columna, ', ' ORDER BY columna).
+- No uses funciones de MySQL como GROUP_CONCAT, IFNULL, DATE_FORMAT o LIMIT offset,count.
+
 REGLAS DE JOINS:
 - Para valores por temporada de un jugador, usa h_jugador_temporada.
 - Para valores por partido de un jugador, usa h_jugador_partido.
