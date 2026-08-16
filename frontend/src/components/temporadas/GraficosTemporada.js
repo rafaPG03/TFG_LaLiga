@@ -908,7 +908,7 @@ export default function GraficosTemporada({ temporada }) {
                   dy={-8}
                   textAnchor="middle"
                   style={{
-                    fill: colors.textStrong,
+                    fill: () => colors.textStrong,
                     fontSize: 8,
                     fontWeight: "900",
                   }}
@@ -1032,16 +1032,16 @@ export default function GraficosTemporada({ temporada }) {
                 },
               }}
             />
-            <VictoryScatter
-              data={dataAtacantes}
-              size={0}
-              style={{
-                labels: {
-                  fill: isDark ? colors.textStrong : colors.text,
-                  fontSize: 8,
-                  fontWeight: "800",
-                },
-              }}
+              <VictoryScatter
+                data={dataAtacantes}
+                size={0}
+                style={{
+                  labels: {
+                    fill: () => colors.textStrong,
+                    fontSize: 8,
+                    fontWeight: "800",
+                  },
+                }}
               labels={({ datum }) => {
                 if (selectedEquipoId === TODOS) {
                   return datum.goles > 10 ? getInitials(datum.nombre) : "";

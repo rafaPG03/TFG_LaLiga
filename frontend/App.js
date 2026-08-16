@@ -170,7 +170,10 @@ function AppContent() {
             <Stack.Screen name="MainApp" component={DrawerNavigator} />
             
           </Stack.Navigator>
-          <AgenteDeOro visible={agenteVisible} />
+          <AgenteDeOro
+            visible={agenteVisible}
+            resetConversation={rutaActiva === 'Login'}
+          />
         </NavigationContainer>
       </FavoritosProvider>
     </GestureHandlerRootView>

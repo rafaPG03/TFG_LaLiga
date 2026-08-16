@@ -183,11 +183,11 @@ const ChartCard = ({ title, subtitle, children }) => (
 export default function AnalisisGraficas({ route }) {
   const { colors } = useTheme();
   const CHART_LABEL_STYLE = useMemo(
-    () => ({ fill: colors.text, fontSize: 8, fontWeight: "800" }),
+    () => ({ fill: () => colors.text, fontSize: 8, fontWeight: "800" }),
     [colors],
   );
   const POINT_LABEL_STYLE = useMemo(
-    () => ({ fill: colors.text, fontSize: 8, fontWeight: "900" }),
+    () => ({ fill: () => colors.text, fontSize: 8, fontWeight: "900" }),
     [colors],
   );
   const { id_partido, partidoInfo, datosEquipo } = route.params || {};
@@ -251,12 +251,12 @@ export default function AnalisisGraficas({ route }) {
   const axisStyle = {
     axis: { stroke: colors.border },
     axisLabel: {
-      fill: colors.textMuted,
+      fill: () => colors.textMuted,
       fontSize: 10,
       fontWeight: "700",
       padding: 28,
     },
-    tickLabels: { fill: colors.textMuted, fontSize: 9, padding: 4 },
+    tickLabels: { fill: () => colors.textMuted, fontSize: 9, padding: 4 },
     grid: { stroke: colors.border, strokeDasharray: "4,4" },
   };
 
@@ -373,7 +373,7 @@ export default function AnalisisGraficas({ route }) {
               style={{
                 ...axisStyle,
                 tickLabels: {
-                  fill: colors.text,
+                  fill: () => colors.text,
                   fontSize: 8,
                   fontWeight: "800",
                   padding: 8,
@@ -458,7 +458,7 @@ export default function AnalisisGraficas({ route }) {
                 axis: { stroke: COLORS.border },
                 grid: { stroke: COLORS.border },
                 tickLabels: {
-                  fill: colors.text,
+                  fill: () => colors.text,
                   fontSize: 9,
                   fontWeight: "700",
                   padding: 10,
@@ -725,7 +725,7 @@ export default function AnalisisGraficas({ route }) {
               style={{
                 ...axisStyle,
                 tickLabels: {
-                  fill: colors.textMuted,
+                  fill: () => colors.textMuted,
                   fontSize: 8,
                   padding: 8,
                 },

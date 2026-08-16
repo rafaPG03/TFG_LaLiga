@@ -33,13 +33,21 @@ const SUGERENCIAS = [
 ];
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL;
+const MAX_HISTORIAL_MENSAJES = 12;
 
 const crearId = (prefijo) => `${prefijo}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-export default function AgenteDeOro({ visible = true }) {
+const MENSAJES_INICIALES = [MENSAJE_BIENVENIDA, MENSAJE_HINT];
+
+const crearHistorial = (mensajes) => mensajes
+  .filter((mensaje) => mensaje.contextEligible === true)
+  .slice(-MAX_HISTORIAL_MENSAJES)
+  .map(({ role, text }) => ({ role, text }));
+
+export default function AgenteDeOro({ visible = true, resetConversation = false }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [texto, setTexto] = useState('');
-  const [mensajes, setMensajes] = useState([MENSAJE_BIENVENIDA, MENSAJE_HINT]);
+  const [mensajes, setMensajes] = useState(MENSAJES_INICIALES);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const scrollViewRef = useRef(null);
@@ -50,6 +58,27 @@ export default function AgenteDeOro({ visible = true }) {
     setModalVisible(false);
     setError('');
   };
+
+  const nuevoChat = () => {
+    if (cargando) {
+      return;
+    }
+
+    setMensajes(MENSAJES_INICIALES);
+    setTexto('');
+    setError('');
+  };
+
+  useEffect(() => {
+    if (!resetConversation) {
+      return;
+    }
+
+    setMensajes(MENSAJES_INICIALES);
+    setTexto('');
+    setError('');
+    setModalVisible(false);
+  }, [resetConversation]);
 
   useEffect(() => {
     if (!modalVisible) {
@@ -86,7 +115,9 @@ export default function AgenteDeOro({ visible = true }) {
       id: crearId('user'),
       role: 'user',
       text: pregunta,
+      contextEligible: false,
     };
+    const historial = crearHistorial(mensajes);
 
     setMensajes((prev) => [...prev, mensajeUsuario]);
     setTexto('');
@@ -103,7 +134,7 @@ export default function AgenteDeOro({ visible = true }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ pregunta }),
+        body: JSON.stringify({ pregunta, historial }),
       });
 
       const data = await response.json();
@@ -119,11 +150,16 @@ export default function AgenteDeOro({ visible = true }) {
           : data?.mensaje || 'No he podido generar una respuesta.';
 
       setMensajes((prev) => [
-        ...prev,
+        ...prev.map((mensaje) => (
+          mensaje.id === mensajeUsuario.id
+            ? { ...mensaje, contextEligible: true }
+            : mensaje
+        )),
         {
           id: crearId('assistant'),
           role: 'assistant',
           text: respuestaTexto,
+          contextEligible: true,
         },
       ]);
     } catch (err) {
@@ -135,6 +171,7 @@ export default function AgenteDeOro({ visible = true }) {
           id: crearId('error'),
           role: 'assistant',
           text: 'Ahora mismo no puedo responder. Intentalo de nuevo en unos segundos.',
+          contextEligible: false,
         },
       ]);
     } finally {
@@ -203,9 +240,22 @@ export default function AgenteDeOro({ visible = true }) {
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.closeButton} onPress={cerrar} activeOpacity={0.8}>
-                  <Ionicons name="close" size={18} color="#f8e8b4" />
-                </TouchableOpacity>
+                <View style={styles.headerActions}>
+                  <TouchableOpacity
+                    style={[styles.newChatButton, cargando && styles.headerButtonDisabled]}
+                    onPress={nuevoChat}
+                    activeOpacity={0.8}
+                    disabled={cargando}
+                    accessibilityLabel="Iniciar un nuevo chat"
+                  >
+                    <Ionicons name="add" size={16} color="#f8e8b4" />
+                    <Text style={styles.newChatText}>Nuevo chat</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.closeButton} onPress={cerrar} activeOpacity={0.8}>
+                    <Ionicons name="close" size={18} color="#f8e8b4" />
+                  </TouchableOpacity>
+                </View>
               </LinearGradient>
 
               <View style={styles.body}>
@@ -392,6 +442,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 246, 210, 0.1)',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  newChatButton: {
+    height: 34,
+    borderRadius: 17,
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 246, 210, 0.1)',
+  },
+  newChatText: {
+    color: '#f8e8b4',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  headerButtonDisabled: {
+    opacity: 0.5,
   },
   body: {
     backgroundColor: '#fffdf7',

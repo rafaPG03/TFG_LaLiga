@@ -11,6 +11,10 @@ dist/
 web-build/
 expo-env.d.ts
 
+# Python
+__pycache__/
+*.py[cod]
+
 # Native
 .kotlin/
 *.orig.*

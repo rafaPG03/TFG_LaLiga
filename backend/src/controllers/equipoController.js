@@ -577,6 +577,7 @@ const getDashboardEquipo = async (req, res) => {
       ratingsResult,
       radarResult,
       jugadoresResult,
+      jugadoresPartidoResult,
       partidosResult,
       proximoPartidoResult,
       referenciasResult,
@@ -620,15 +621,23 @@ const getDashboardEquipo = async (req, res) => {
           SELECT
             p.id_partido,
             t.jornada,
-            AVG(COALESCE(h.nota, 0)) AS nota_media_equipo
+            AVG(h.nota) AS nota_media_equipo,
+            rival.nombre_equipo AS rival,
+            rival.logo AS rival_logo
           FROM h_jugador_partido h
           JOIN dim_partidos p ON h.id_partido = p.id_partido
           JOIN dim_tiempo t ON p.id_tiempo = t.id_tiempo
+          LEFT JOIN dim_equipo rival
+            ON rival.id_equipo = CASE
+              WHEN p.id_local = $1 THEN p.id_visitante
+              ELSE p.id_local
+            END
           WHERE h.id_equipo = $1
             AND p.temporada = $2
+            AND (p.id_local = $1 OR p.id_visitante = $1)
             AND p.status = 'Completado'
-            AND h.nota > 0.1
-          GROUP BY p.id_partido, t.jornada
+            AND h.nota > 1
+          GROUP BY p.id_partido, t.jornada, rival.nombre_equipo, rival.logo
           ORDER BY t.jornada ASC, p.id_partido ASC;
         `,
         [id_equipo, temporada],
@@ -688,24 +697,84 @@ const getDashboardEquipo = async (req, res) => {
             h.id_jugador,
             h.id_equipo,
             j.nombre,
+            j.foto,
             h.posicion,
             h.partidos,
             h.minutos,
+            h.titular,
             h.nota_media,
             h.goles,
             h.asistencias,
             h.tiros_totales,
+            h.tiros_a_puerta,
             h.pases_totales,
             h.pases_clave,
             h.precision_pases,
             h.entradas,
             h.bloqueos,
-            h.intercepciones
+            h.intercepciones,
+            h.duelos_totales,
+            h.duelos_ganados,
+            h.regates_intentados,
+            h.regates_exito,
+            h.goles_concedidos,
+            h.paradas,
+            h.penaltis_parados,
+            r.ataque,
+            r.creacion,
+            r.defensa,
+            r.porteros,
+            r.duelos,
+            r.regates
           FROM h_jugador_temporada h
           LEFT JOIN dim_jugador j ON j.id_jugador = h.id_jugador
+          LEFT JOIN dm_jugadores_ratings r
+            ON r.id_jugador = h.id_jugador
+           AND r.temporada = h.temporada
           WHERE h.id_equipo = $1
             AND h.temporada = $2
+            AND EXISTS (
+              SELECT 1
+              FROM h_jugador_partido hp
+              JOIN dim_partidos partido_real
+                ON partido_real.id_partido = hp.id_partido
+              WHERE hp.id_jugador = h.id_jugador
+                AND hp.id_equipo = h.id_equipo
+                AND partido_real.temporada = h.temporada
+                AND (
+                  partido_real.id_local = h.id_equipo
+                  OR partido_real.id_visitante = h.id_equipo
+                )
+                AND partido_real.status = 'Completado'
+            )
           ORDER BY COALESCE(h.minutos, 0) DESC, COALESCE(h.nota_media, 0) DESC, COALESCE(h.goles, 0) DESC, j.nombre ASC;
+        `,
+        [id_equipo, temporada],
+      ),
+      pool.query(
+        `
+          SELECT
+            h.id_partido,
+            h.id_jugador,
+            t.jornada,
+            h.nota,
+            h.goles,
+            h.minutos,
+            rival.nombre_equipo AS rival,
+            rival.logo AS rival_logo
+          FROM h_jugador_partido h
+          JOIN dim_partidos p ON p.id_partido = h.id_partido
+          JOIN dim_tiempo t ON t.id_tiempo = p.id_tiempo
+          LEFT JOIN dim_equipo rival
+            ON rival.id_equipo = CASE
+              WHEN p.id_local = $1 THEN p.id_visitante
+              ELSE p.id_local
+            END
+          WHERE h.id_equipo = $1
+            AND p.temporada = $2
+            AND (p.id_local = $1 OR p.id_visitante = $1)
+            AND p.status = 'Completado'
+          ORDER BY t.jornada ASC, p.id_partido ASC, h.id_jugador ASC;
         `,
         [id_equipo, temporada],
       ),
@@ -896,6 +965,7 @@ const getDashboardEquipo = async (req, res) => {
     const ratingsLinea = ratingsResult.rows || [];
     const radar = radarResult.rows[0] || {};
     const jugadores = jugadoresResult.rows || [];
+    const jugadoresPartido = jugadoresPartidoResult.rows || [];
     const partidos = partidosResult.rows || [];
     const proximoPartido = proximoPartidoResult.rows[0] || null;
     const referencias = referenciasResult.rows[0] || {};
@@ -1002,7 +1072,7 @@ const getDashboardEquipo = async (req, res) => {
           victorias: ultimaFila.victorias,
           empates: ultimaFila.empates,
           derrotas: ultimaFila.derrotas,
-      }
+        }
       : null;
 
     const posicionFinal = toNumber(clasificacionActual?.posicion);
@@ -1016,8 +1086,7 @@ const getDashboardEquipo = async (req, res) => {
             europa_pct: posicionFinal >= 1 && posicionFinal <= 7 ? 100 : 0,
             media_tabla_pct:
               posicionFinal >= 8 && posicionFinal <= 17 ? 100 : 0,
-            descenso_pct:
-              posicionFinal >= 18 && posicionFinal <= 20 ? 100 : 0,
+            descenso_pct: posicionFinal >= 18 && posicionFinal <= 20 ? 100 : 0,
           }
         : null;
 
@@ -1041,8 +1110,20 @@ const getDashboardEquipo = async (req, res) => {
         id_partido: toNumber(fila.id_partido),
         jornada: toNumber(fila.jornada),
         nota_media_equipo: parseFloat(fila.nota_media_equipo) || 0,
+        rival: fila.rival || null,
+        rival_logo: fila.rival_logo || null,
       })),
       jugadores,
+      jugadores_partido: jugadoresPartido.map((fila) => ({
+        id_partido: toNumber(fila.id_partido),
+        id_jugador: toNumber(fila.id_jugador),
+        jornada: toNumber(fila.jornada),
+        nota: parseFloat(fila.nota) || 0,
+        goles: toNumber(fila.goles),
+        minutos: toNumber(fila.minutos),
+        rival: fila.rival || null,
+        rival_logo: fila.rival_logo || null,
+      })),
       ultimos_partidos: ultimosPartidos,
       resumen_local_visitante: resumenLocalVisitante,
       bandas,
