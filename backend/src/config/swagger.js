@@ -27,6 +27,13 @@ const options = {
       { name: 'Chatbot', description: 'Consultas en lenguaje natural sobre la base de datos' },
     ],
     components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
       parameters: {
         Temporada: {
           in: 'query',

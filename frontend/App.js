@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator, StatusBar, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 // Pantallas
@@ -27,11 +26,11 @@ import CambiarContrasenaScreen from './src/screens/CambiarContraseñaScreen';
 import CustomDrawer from './src/components/menu';
 import AgenteDeOro from './src/components/agente/AgenteDeOro';
 import { FavoritosProvider } from './src/context/FavoritosContext';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
-const SESSION_KEY = '@tfg/session';
 const AGENTE_ROUTES_PERMITIDAS = new Set([
   'Inicio',
   'Temporadas',
@@ -99,25 +98,9 @@ function DrawerNavigator() {
 // 2. Navegador Principal (Stack)
 function AppContent() {
   const { colors, isDark, isThemeReady, navigationTheme } = useTheme();
-  const [cargandoSesion, setCargandoSesion] = useState(true);
-  const [haySesion, setHaySesion] = useState(false);
+  const { sesion, cargandoSesion } = useAuth();
   const navigationRef = useRef(null);
   const [rutaActiva, setRutaActiva] = useState(null);
-
-  useEffect(() => {
-    const restaurarSesion = async () => {
-      try {
-        const sesionGuardada = await AsyncStorage.getItem(SESSION_KEY);
-        setHaySesion(Boolean(sesionGuardada));
-      } catch (error) {
-        setHaySesion(false);
-      } finally {
-        setCargandoSesion(false);
-      }
-    };
-
-    restaurarSesion();
-  }, []);
 
   if (!isThemeReady || cargandoSesion) {
     return (
@@ -138,7 +121,7 @@ function AppContent() {
     );
   }
 
-  const agenteVisible = AGENTE_ROUTES_PERMITIDAS.has(rutaActiva);
+  const agenteVisible = Boolean(sesion) && AGENTE_ROUTES_PERMITIDAS.has(rutaActiva);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
@@ -158,16 +141,15 @@ function AppContent() {
           }}
         >
           <Stack.Navigator
-            initialRouteName={haySesion ? 'MainApp' : 'Login'}
             screenOptions={{ headerShown: false }}
           >
             
             {/* Pantallas de acceso (Sin Menú Lateral) */}
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Registro" component={RegistroScreen} />
+            {!sesion && <Stack.Screen name="Login" component={LoginScreen} />}
+            {!sesion && <Stack.Screen name="Registro" component={RegistroScreen} />}
 
             {/* Pantalla Principal (QUE CONTIENE EL DRAWER) */}
-            <Stack.Screen name="MainApp" component={DrawerNavigator} />
+            {sesion && <Stack.Screen name="MainApp" component={DrawerNavigator} />}
             
           </Stack.Navigator>
           <AgenteDeOro
@@ -183,7 +165,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </ThemeProvider>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
 	Alert,
 	Image,
@@ -8,13 +8,9 @@ import {
 	View,
 } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import { CommonActions } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useFavoritos } from '../context/FavoritosContext';
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../theme/ThemeContext';
-
-const SESSION_KEY = '@tfg/session';
 
 const MENU_OPTIONS = [
 	{ label: 'Inicio', route: 'Inicio', icon: 'home-outline' },
@@ -27,34 +23,10 @@ const MENU_OPTIONS = [
 ];
 
 export default function CustomDrawer(props) {
-	const { refreshSession } = useFavoritos();
+	const { sesion, cerrarSesion: limpiarSesion } = useAuth();
 	const { colors } = useTheme();
-	const [nombreUsuario, setNombreUsuario] = useState('Usuario');
-	const [idUsuario, setIdUsuario] = useState(null);
-
-	useEffect(() => {
-		const cargarSesion = async () => {
-			try {
-				const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-
-				if (!rawSesion) {
-					return;
-				}
-
-				const sesion = JSON.parse(rawSesion);
-				if (sesion?.nombre) {
-					setNombreUsuario(sesion.nombre);
-				}
-				if (sesion?.id) {
-					setIdUsuario(sesion.id);
-				}
-			} catch (error) {
-				console.log('No se pudo leer la sesion guardada');
-			}
-		};
-
-		cargarSesion();
-	}, [props.state?.index]);
+	const nombreUsuario = sesion?.nombre || 'Usuario';
+	const idUsuario = sesion?.id || null;
 
 const irAPantalla = (route) => {
     if (route === 'Perfil') {
@@ -67,18 +39,7 @@ const irAPantalla = (route) => {
 
 	const cerrarSesion = async () => {
 		try {
-			await AsyncStorage.removeItem(SESSION_KEY);
-			await refreshSession();
-
-			const parentNavigation = props.navigation.getParent();
-			if (parentNavigation) {
-				parentNavigation.dispatch(
-					CommonActions.reset({
-						index: 0,
-						routes: [{ name: 'Login' }],
-					})
-				);
-			}
+			await limpiarSesion();
 		} catch (error) {
 			Alert.alert('Error', 'No se pudo cerrar sesion. Intentalo otra vez.');
 		}

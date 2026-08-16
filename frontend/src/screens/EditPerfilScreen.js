@@ -11,46 +11,19 @@ import {
 	TouchableOpacity,
 	View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import CustomHeader from '../components/header';
-
-const SESSION_KEY = '@tfg/session';
+import { useAuth } from '../context/AuthContext';
 
 export default function EditPerfilScreen({ navigation, route }) {
 	const { usuarioId: usuarioIdParam, usuario: usuarioParam } = route.params || {};
-	const [idUsuario, setIdUsuario] = useState(usuarioIdParam || null);
+	const { sesion, actualizarSesion, peticionAutenticada } = useAuth();
+	const [idUsuario] = useState(usuarioIdParam || sesion?.id || null);
 	const [nombreUsuario, setNombreUsuario] = useState(
-		usuarioParam?.nombre_usuario || usuarioParam?.nombre || ''
+		usuarioParam?.nombre_usuario || usuarioParam?.nombre || sesion?.nombre || ''
 	);
-	const [email, setEmail] = useState(usuarioParam?.email || '');
+	const [email, setEmail] = useState(usuarioParam?.email || sesion?.email || '');
 	const [cargando, setCargando] = useState(false);
 	const [guardando, setGuardando] = useState(false);
-
-	useEffect(() => {
-		const cargarSesion = async () => {
-			try {
-				const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-				if (!rawSesion) {
-					return;
-				}
-
-				const sesion = JSON.parse(rawSesion);
-				if (!idUsuario && sesion?.id) {
-					setIdUsuario(Number(sesion.id));
-				}
-				if (!nombreUsuario && sesion?.nombre) {
-					setNombreUsuario(sesion.nombre);
-				}
-				if (!email && sesion?.email) {
-					setEmail(sesion.email);
-				}
-			} catch (error) {
-				Alert.alert('Error', 'No se pudo leer la sesion guardada.');
-			}
-		};
-
-		cargarSesion();
-	}, [idUsuario, nombreUsuario, email]);
 
 	useEffect(() => {
 		if (!idUsuario || nombreUsuario || email) {
@@ -60,7 +33,7 @@ export default function EditPerfilScreen({ navigation, route }) {
 		const cargarUsuario = async () => {
 			setCargando(true);
 			try {
-				const response = await fetch(
+				const response = await peticionAutenticada(
 					`${process.env.EXPO_PUBLIC_API_URL}/usuarios/${idUsuario}`
 				);
 
@@ -79,7 +52,7 @@ export default function EditPerfilScreen({ navigation, route }) {
 		};
 
 		cargarUsuario();
-	}, [idUsuario, nombreUsuario, email]);
+	}, [idUsuario, nombreUsuario, email, peticionAutenticada]);
 
 	const handleGuardar = async () => {
 		if (guardando) {
@@ -99,7 +72,7 @@ export default function EditPerfilScreen({ navigation, route }) {
 		setGuardando(true);
 
 		try {
-			const response = await fetch(
+			const response = await peticionAutenticada(
 				`${process.env.EXPO_PUBLIC_API_URL}/usuarios/${idUsuario}`,
 				{
 					method: 'PUT',
@@ -117,16 +90,7 @@ export default function EditPerfilScreen({ navigation, route }) {
 				throw new Error(data?.error || 'No se pudo actualizar el perfil');
 			}
 
-			const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-			if (rawSesion) {
-				const sesion = JSON.parse(rawSesion);
-				const sesionActualizada = {
-					...sesion,
-					nombre: data?.nombre_usuario || nombreUsuario.trim(),
-					email: data?.email || email.trim(),
-				};
-				await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(sesionActualizada));
-			}
+			await actualizarSesion(data);
 
 			Alert.alert('Listo', 'Perfil actualizado correctamente.');
 			navigation.goBack();

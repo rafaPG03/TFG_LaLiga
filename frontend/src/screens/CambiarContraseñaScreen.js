@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,45 +11,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
+import { useAuth } from '../context/AuthContext';
 
-const SESSION_KEY = '@tfg/session';
 const PRIMARY_BLUE = '#2e86de';
 const BACKGROUND_WHITE = '#FFFFFF';
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 export default function CambiarContrasenaScreen({ navigation, route }) {
   const { usuarioId: usuarioIdParam } = route.params || {};
-  const [idUsuario, setIdUsuario] = useState(usuarioIdParam || null);
+  const { sesion, peticionAutenticada } = useAuth();
+  const idUsuario = Number(usuarioIdParam || sesion?.id) || null;
   const [passwordActual, setPasswordActual] = useState('');
   const [passwordNueva, setPasswordNueva] = useState('');
   const [confirmarPassword, setConfirmarPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
   const [guardando, setGuardando] = useState(false);
-
-  useEffect(() => {
-    const cargarSesion = async () => {
-      try {
-        const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-
-        if (!rawSesion || idUsuario) {
-          return;
-        }
-
-        const sesion = JSON.parse(rawSesion);
-
-        if (sesion?.id) {
-          setIdUsuario(Number(sesion.id));
-        }
-      } catch (error) {
-        Alert.alert('Error', 'No se pudo leer la sesion guardada.');
-      }
-    };
-
-    cargarSesion();
-  }, [idUsuario]);
 
   const handleCambiarPassword = async () => {
     if (guardando) {
@@ -87,7 +65,7 @@ export default function CambiarContrasenaScreen({ navigation, route }) {
     setGuardando(true);
 
     try {
-      const response = await fetch(
+      const response = await peticionAutenticada(
         `${process.env.EXPO_PUBLIC_API_URL}/usuarios/${idUsuario}/password`,
         {
           method: 'PUT',

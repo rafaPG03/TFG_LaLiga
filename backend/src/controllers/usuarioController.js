@@ -1,5 +1,6 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt'); // 1. Importar bcrypt
+const jwt = require('jsonwebtoken');
 
 const registrarUsuario = async (req, res) => {
   const { nombre_usuario, email, password } = req.body;
@@ -50,9 +51,21 @@ const loginUsuario = async (req, res) => {
       return res.status(401).json({ error: "Datos incorrectos" });
     }
 
-    // 3. Si todo ok, devolvemos los datos (sin el hash)
+    if (!process.env.JWT_SECRET) {
+      console.error('JWT_SECRET no esta configurado');
+      return res.status(500).json({ error: 'Autenticacion no configurada en el servidor' });
+    }
+
+    const token = jwt.sign({}, process.env.JWT_SECRET, {
+      algorithm: 'HS256',
+      subject: String(usuario.id_usuario),
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    });
+
+    // 3. Si todo ok, devolvemos los datos (sin el hash) y el token JWT
     res.json({
       mensaje: "Login exitoso",
+      token,
       usuario: {
         id: usuario.id_usuario,
         nombre: usuario.nombre_usuario,

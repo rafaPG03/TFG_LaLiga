@@ -4,6 +4,8 @@
  *   post:
  *     summary: Marca o desmarca un equipo o jugador como favorito
  *     tags: [Favoritos]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -31,6 +33,8 @@
  *   get:
  *     summary: Obtiene los favoritos de un usuario
  *     tags: [Favoritos]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - $ref: '#/components/parameters/IdUsuario'
  *     responses:
@@ -49,8 +53,19 @@
 const express = require('express');
 const router = express.Router();
 const favoritosController = require('../controllers/favoritosController');
+const { verificarToken, autorizarMismoUsuario } = require('../middleware/auth');
 
-router.post('/toggle', favoritosController.toggleFavorito);
-router.get('/:id_usuario', favoritosController.getFavoritosUsuario);
+router.post(
+  '/toggle',
+  verificarToken,
+  autorizarMismoUsuario('body', 'id_usuario'),
+  favoritosController.toggleFavorito
+);
+router.get(
+  '/:id_usuario',
+  verificarToken,
+  autorizarMismoUsuario('params', 'id_usuario'),
+  favoritosController.getFavoritosUsuario
+);
 
 module.exports = router;

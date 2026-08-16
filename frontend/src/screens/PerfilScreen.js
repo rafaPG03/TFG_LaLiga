@@ -10,17 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { CommonActions } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import CustomHeader from '../components/header';
-import { useFavoritos } from '../context/FavoritosContext';
-
-const SESSION_KEY = '@tfg/session';
+import { useAuth } from '../context/AuthContext';
 
 export default function PerfilScreen({navigation, route}) {
-   const { usuarioId } = route.params || {};
-   const { refreshSession } = useFavoritos();
+   const { usuarioId: usuarioIdParam } = route.params || {};
+   const { sesion, cerrarSesion: limpiarSesion, peticionAutenticada } = useAuth();
+   const usuarioId = Number(usuarioIdParam || sesion?.id) || null;
    const [usuario, setUsuario] = useState(null);
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
@@ -36,7 +33,7 @@ export default function PerfilScreen({navigation, route}) {
          setCargando(true);
          setErrorCarga('');
          try {
-            const response = await fetch(
+            const response = await peticionAutenticada(
                `${process.env.EXPO_PUBLIC_API_URL}/usuarios/${usuarioId}`
             );
             if (!response.ok) {
@@ -60,7 +57,7 @@ export default function PerfilScreen({navigation, route}) {
       return () => {
          pantallaActiva = false;
       };
-   }, [usuarioId]);
+   }, [usuarioId, peticionAutenticada]);
 
    const cerrarSesion = async () => {
       if (cerrandoSesion) {
@@ -70,37 +67,7 @@ export default function PerfilScreen({navigation, route}) {
       setCerrandoSesion(true);
 
       try {
-         const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-         const sesion = rawSesion ? JSON.parse(rawSesion) : null;
-         const idSesion = Number(sesion?.id) || null;
-
-         if (!rawSesion && !usuarioId) {
-            Alert.alert('Aviso', 'No hay una sesion activa que cerrar.');
-         }
-
-         try {
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/logout`, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ id_usuario: idSesion || usuarioId || null }),
-            });
-
-            if (!response.ok) {
-               throw new Error('Logout no disponible');
-            }
-         } catch (error) {
-            Alert.alert('Aviso', 'No se pudo cerrar sesion en el servidor.');
-         }
-
-         await AsyncStorage.removeItem(SESSION_KEY);
-         await refreshSession();
-
-         navigation.dispatch(
-            CommonActions.reset({
-               index: 0,
-               routes: [{ name: 'Login' }],
-            })
-         );
+         await limpiarSesion();
       } catch (error) {
          Alert.alert('Error', 'No se pudo cerrar sesion. Intentalo otra vez.');
       } finally {

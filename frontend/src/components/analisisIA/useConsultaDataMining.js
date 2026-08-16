@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function useConsultaDataMining(ruta, activa = true) {
+  const { peticionAutenticada } = useAuth();
   const [data, setData] = useState(null);
   const [cargando, setCargando] = useState(activa);
   const [error, setError] = useState("");
@@ -22,7 +24,7 @@ export default function useConsultaDataMining(ruta, activa = true) {
       setError("");
 
       try {
-        const response = await fetch(
+        const response = await peticionAutenticada(
           `${process.env.EXPO_PUBLIC_API_URL}${ruta}`,
           {
             signal: controller.signal,
@@ -54,7 +56,7 @@ export default function useConsultaDataMining(ruta, activa = true) {
       montado = false;
       controller.abort();
     };
-  }, [ruta, activa, version]);
+  }, [ruta, activa, version, peticionAutenticada]);
 
   return { data, cargando, error, recargar };
 }

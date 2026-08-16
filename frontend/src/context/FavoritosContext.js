@@ -1,29 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from './AuthContext';
 
-const SESSION_KEY = '@tfg/session';
 const FavoritosContext = createContext(null);
 
 export function FavoritosProvider({ children }) {
-  const [idUsuario, setIdUsuario] = useState(null);
+  const { sesion, peticionAutenticada } = useAuth();
+  const idUsuario = Number(sesion?.id) || null;
   const [equiposFav, setEquiposFav] = useState([]);
   const [jugadoresFav, setJugadoresFav] = useState([]);
   const [loadingFavoritos, setLoadingFavoritos] = useState(true);
-
-  const refreshSession = useCallback(async () => {
-    try {
-      const rawSesion = await AsyncStorage.getItem(SESSION_KEY);
-      if (!rawSesion) {
-        setIdUsuario(null);
-        return;
-      }
-
-      const sesion = JSON.parse(rawSesion);
-      setIdUsuario(Number(sesion?.id) || null);
-    } catch (error) {
-      setIdUsuario(null);
-    }
-  }, []);
 
   const cargarFavoritos = useCallback(async (usuarioId) => {
     if (!usuarioId) {
@@ -36,7 +21,9 @@ export function FavoritosProvider({ children }) {
     setLoadingFavoritos(true);
 
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/favoritos/${usuarioId}`);
+      const response = await peticionAutenticada(
+        `${process.env.EXPO_PUBLIC_API_URL}/favoritos/${usuarioId}`
+      );
       if (!response.ok) {
         throw new Error('No se pudieron cargar los favoritos');
       }
@@ -50,11 +37,7 @@ export function FavoritosProvider({ children }) {
     } finally {
       setLoadingFavoritos(false);
     }
-  }, []);
-
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
+  }, [peticionAutenticada]);
 
   useEffect(() => {
     cargarFavoritos(idUsuario);
@@ -100,7 +83,7 @@ export function FavoritosProvider({ children }) {
       }
 
       try {
-        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/favoritos/toggle`, {
+        const response = await peticionAutenticada(`${process.env.EXPO_PUBLIC_API_URL}/favoritos/toggle`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -129,7 +112,7 @@ export function FavoritosProvider({ children }) {
         return false;
       }
     },
-    [idUsuario, equiposFav, jugadoresFav]
+    [idUsuario, equiposFav, jugadoresFav, peticionAutenticada]
   );
 
   const value = useMemo(
@@ -140,10 +123,9 @@ export function FavoritosProvider({ children }) {
       loadingFavoritos,
       isFavorite,
       toggleFav,
-      refreshSession,
       recargarFavoritos: () => cargarFavoritos(idUsuario),
     }),
-    [idUsuario, equiposFav, jugadoresFav, loadingFavoritos, isFavorite, toggleFav, refreshSession, cargarFavoritos]
+    [idUsuario, equiposFav, jugadoresFav, loadingFavoritos, isFavorite, toggleFav, cargarFavoritos]
   );
 
   return <FavoritosContext.Provider value={value}>{children}</FavoritosContext.Provider>;
