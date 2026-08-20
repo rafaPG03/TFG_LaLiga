@@ -186,10 +186,31 @@ const cambiarPassword = async (req, res) => {
   }
 };
 
+const eliminarUsuario = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'DELETE FROM dim_usuario WHERE id_usuario = $1 RETURNING id_usuario',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    res.json({ mensaje: 'Cuenta eliminada correctamente' });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: 'Error al eliminar la cuenta' });
+  }
+};
+
 module.exports = {
   registrarUsuario,
   loginUsuario,
   getUsuarioPorId,
   actualizarUsuario,
   cambiarPassword,
+  eliminarUsuario,
 };

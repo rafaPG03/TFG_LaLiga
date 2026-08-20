@@ -22,6 +22,7 @@ export default function PerfilScreen({navigation, route}) {
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
    const [cerrandoSesion, setCerrandoSesion] = useState(false);
+   const [eliminandoCuenta, setEliminandoCuenta] = useState(false);
 
    useEffect(() => {
       if (!usuarioId) {
@@ -73,6 +74,49 @@ export default function PerfilScreen({navigation, route}) {
       } finally {
          setCerrandoSesion(false);
       }
+   };
+
+   const eliminarCuenta = async () => {
+      if (eliminandoCuenta || !usuarioId) {
+         return;
+      }
+
+      setEliminandoCuenta(true);
+
+      try {
+         const response = await peticionAutenticada(
+            `${process.env.EXPO_PUBLIC_API_URL}/usuarios/${usuarioId}`,
+            { method: 'DELETE' }
+         );
+         const data = await response.json().catch(() => ({}));
+
+         if (!response.ok) {
+            throw new Error(data?.error || 'No se pudo eliminar la cuenta');
+         }
+
+         await limpiarSesion();
+         Alert.alert('Cuenta eliminada', 'Tu cuenta y todos sus datos se han eliminado.');
+      } catch (error) {
+         Alert.alert('Error', error.message || 'No se pudo eliminar la cuenta. Inténtalo otra vez.');
+      } finally {
+         setEliminandoCuenta(false);
+      }
+   };
+
+   const confirmarEliminacion = () => {
+      Alert.alert(
+         '¿Eliminar tu cuenta?',
+         'Esta acción es permanente y no se puede deshacer. Se eliminarán tu perfil y todos tus favoritos, y se cerrará tu sesión.',
+         [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+               text: 'Eliminar cuenta',
+               style: 'destructive',
+               onPress: eliminarCuenta,
+            },
+         ],
+         { cancelable: true }
+      );
    };
 
    return (
@@ -138,6 +182,24 @@ export default function PerfilScreen({navigation, route}) {
                   </Text> 
                </TouchableOpacity>
             </View>
+            <TouchableOpacity
+               style={[
+                  styles.eliminarCuentaButton,
+                  eliminandoCuenta && styles.opcionItemDisabled,
+               ]}
+               activeOpacity={0.8}
+               onPress={confirmarEliminacion}
+               disabled={eliminandoCuenta}
+            >
+               {eliminandoCuenta ? (
+                  <ActivityIndicator size="small" color="#b42318" />
+               ) : (
+                  <Ionicons name="trash-outline" size={20} color="#b42318" />
+               )}
+               <Text style={styles.eliminarCuentaTexto}>
+                  {eliminandoCuenta ? 'Eliminando cuenta...' : 'Eliminar cuenta'}
+               </Text>
+            </TouchableOpacity>
          </ScrollView>
       </KeyboardAvoidingView>
    );
@@ -218,6 +280,25 @@ datosContainer: {
       marginLeft: 12,
       fontSize: 16,
       color: '#133d60',
+   },
+   eliminarCuentaButton: {
+      marginTop: 20,
+      marginHorizontal: 25,
+      minHeight: 52,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      borderWidth: 2,
+      borderColor: '#d92d20',
+      backgroundColor: '#ffffff',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+   },
+   eliminarCuentaTexto: {
+      marginLeft: 10,
+      color: '#b42318',
+      fontSize: 16,
+      fontWeight: '700',
    },
 
 });

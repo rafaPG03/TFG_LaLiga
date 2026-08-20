@@ -1,0 +1,17 @@
+.git
+.gitignore
+.agents
+.codex
+.env
+.env.*
+!.env.example
+.expo
+backend
+database
+dist
+node_modules
+web-build
+*.log
+*.tex
+**/__pycache__
+**/*.py[cod]

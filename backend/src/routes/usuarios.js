@@ -106,6 +106,25 @@
  *         description: Nombre de usuario o email ya existente.
  *       500:
  *         $ref: '#/components/responses/ServerError'
+ *   delete:
+ *     summary: Elimina permanentemente la cuenta de un usuario
+ *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           example: 1
+ *     responses:
+ *       200:
+ *         description: Cuenta eliminada correctamente.
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
  * /usuarios/{id}/password:
  *   put:
  *     summary: Cambia la contrasena de un usuario
@@ -161,6 +180,12 @@ router.put(
   verificarToken,
   autorizarMismoUsuario('params', 'id'),
   usuariosController.actualizarUsuario
+);
+router.delete(
+  '/:id',
+  verificarToken,
+  autorizarMismoUsuario('params', 'id'),
+  usuariosController.eliminarUsuario
 );
 
 module.exports = router;

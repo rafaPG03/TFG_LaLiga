@@ -26,7 +26,7 @@ def leer_argumentos() -> argparse.Namespace:
     parser.add_argument("--db-port", default=os.getenv("PGPORT", "5432"))
     parser.add_argument("--db-name", default=os.getenv("PGDATABASE", "TFG_BDLaLiga"))
     parser.add_argument("--db-user", default=os.getenv("PGUSER", "postgres"))
-    parser.add_argument("--db-password", default=os.getenv("PGPASSWORD", "betico18"))
+    parser.add_argument("--db-password", default=os.getenv("PGPASSWORD", ""))
     parser.add_argument(
         "--input-json",
         default=None,

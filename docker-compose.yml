@@ -1,0 +1,79 @@
+services:
+  database:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tfg_laliga}
+      POSTGRES_DB: ${DB_NAME:-TFG_BDLaLiga}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          pg_isready -U postgres -d "$${POSTGRES_DB}"
+          && psql -U postgres -d "$${POSTGRES_DB}"
+          -c "SELECT 1 FROM public.dim_partidos LIMIT 1" >/dev/null
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      PORT: 3000
+      DB_USER: postgres
+      DB_HOST: database
+      DB_NAME: ${DB_NAME:-TFG_BDLaLiga}
+      DB_PASSWORD: ${DB_PASSWORD:-tfg_laliga}
+      DB_PORT: 5432
+      PGUSER: postgres
+      PGHOST: database
+      PGDATABASE: ${DB_NAME:-TFG_BDLaLiga}
+      PGPASSWORD: ${DB_PASSWORD:-tfg_laliga}
+      PGPORT: 5432
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      JWT_SECRET: ${JWT_SECRET:-tfg-laliga-evaluacion-local}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      MONTECARLO_PYTHON_PATH: /opt/venv/bin/python
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - >-
+          fetch('http://127.0.0.1:3000/api-docs')
+          .then(response => process.exit(response.ok ? 0 : 1))
+          .catch(() => process.exit(1))
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    environment:
+      EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-http://localhost:3000/api}
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${LAN_IP:-localhost}
+      EXPO_NO_TELEMETRY: 1
+    ports:
+      - "8081:8081"
+    stdin_open: true
+    tty: true
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
