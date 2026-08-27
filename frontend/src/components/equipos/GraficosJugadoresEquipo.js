@@ -142,20 +142,12 @@ const ChartShell = ({ width, height = CHART_HEIGHT, children }) => (
 const MatchLogoLabel = ({ x, y, datum }) => {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-  const size = 22;
-  const centerY = y - 22;
+  const size = 14;
+  const centerY = y - 15;
   const logo = datum?.rival_logo ? { uri: datum.rival_logo } : null;
 
   return (
-    <G>
-      <Circle
-        cx={x}
-        cy={centerY}
-        r={size / 2 + 2}
-        fill="#ffffff"
-        stroke={COLORS.border}
-        strokeWidth={1}
-      />
+    <G opacity={0.95}>
       {logo ? (
         <SvgImage
           x={x - size / 2}

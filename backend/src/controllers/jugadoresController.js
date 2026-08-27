@@ -132,6 +132,7 @@ SELECT
     dv.logo AS logo_visitante,
     dp.goles_local, 
     dp.goles_visitante,
+    dt.jornada,
     dt.dia,
     dt.nombre_mes,
     dt.anio,

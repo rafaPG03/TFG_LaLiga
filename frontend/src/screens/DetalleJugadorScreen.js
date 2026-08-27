@@ -17,7 +17,6 @@ import InfoTab from '../components/jugadores/InfoJugador';
 import PartidosJugTab from '../components/jugadores/PartidosJugador';
 import TrayectoriaTab from '../components/jugadores/TrayectoriaJugador';
 import StatsJugTab from '../components/jugadores/StatsJugador';
-import AtributosTab from '../components/jugadores/AtributosJugador';
 import FavoritoButton from '../components/FavoritoButton';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -146,9 +145,6 @@ export default function DetalleJugadorScreen({navigation, route}) {
             </Tab.Screen>
             <Tab.Screen name="STATS" options={{ tabBarLabel: 'STATS' }}>
                {() => <StatsJugTab id_jugador={id_jugador} />}
-            </Tab.Screen>
-            <Tab.Screen name="ATRIBUTOS" options={{ tabBarLabel: 'ATRIBUTOS' }}>
-               {() => <AtributosTab id_jugador={id_jugador} />}
             </Tab.Screen>
          </Tab.Navigator>
       </KeyboardAvoidingView>
