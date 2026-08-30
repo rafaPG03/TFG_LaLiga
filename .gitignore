@@ -5,6 +5,7 @@ node_modules/
 
 .agents/
 .codex/
+.scripts/
 # Expo
 .expo/
 dist/
@@ -31,6 +32,7 @@ __pycache__/
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+performance-results/
 
 # macOS
 .DS_Store
@@ -52,4 +54,3 @@ yarn-error.*
 # generated native folders
 /ios
 /android
-

@@ -8,7 +8,7 @@ ordenador: esas herramientas y sus dependencias se incluyen en los contenedores.
 
 - Docker Desktop con Docker Compose.
 - Git, si se va a clonar el repositorio.
-- Expo Go instalado en un teléfono Android o iOS.
+- Expo Go compatible con Expo SDK 54. Puede comprobarse en Expo Go mediante Client version → Supported SDK. En Android, si la versión instalada no soporta SDK 54, puede descargarse una compatible desde https://expo.dev/go.
 - El teléfono y el ordenador conectados a la misma red local.
 - Conexión a Internet durante la primera construcción de las imágenes.
 

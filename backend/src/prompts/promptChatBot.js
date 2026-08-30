@@ -275,7 +275,7 @@ Tabla dm_simulacion_montecarlo:
 - media_tabla_pct
 - descenso_pct
 
-Tabla dm_estado_forma_equipos:
+Tabla dm_forma_equipos:
 - id_equipo
 - nombre_equipo
 - puntuacion_forma
