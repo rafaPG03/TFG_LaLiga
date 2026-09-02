@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
    Image,
    FlatList,
@@ -29,6 +30,8 @@ const Tab = createMaterialTopTabNavigator();
 
 export default function DetallePartidoScreen({navigation, route}) {
    const { colors } = useTheme();
+   const { width } = useWindowDimensions();
+   const esEscritorio = Platform.OS === 'web' && width >= 1000;
    const id_partido = route.params?.id_partido ?? route.params?.idpartido;
    const [loading, setLoading] = useState(true);
    const [partidoInfo, setPartidoInfo] = useState(null);
@@ -92,44 +95,84 @@ export default function DetallePartidoScreen({navigation, route}) {
          onMenuPress={() => navigation.openDrawer()}
          onSearchPress={() => Alert.alert('Función de búsqueda no implementada')}
          />
-         <View style = {styles.resultadoContainer}>
-            <Text style={styles.jornadatext}>
+         <View
+            style={[
+               styles.resultadoContainer,
+               esEscritorio && styles.resultadoContainerDesktop,
+            ]}
+         >
+            <Text
+               style={[
+                  styles.jornadatext,
+                  esEscritorio && styles.jornadaTextDesktop,
+               ]}
+            >
                Jornada {partidoInfo?.jornada} 
             </Text>
-            <View style={styles.marcadorRow}>
-               <View style={styles.equipoCol}>
+            <View style={[styles.marcadorRow, esEscritorio && styles.marcadorRowDesktop]}>
+               <View style={[styles.equipoCol, esEscritorio && styles.equipoColDesktop]}>
                   <TouchableOpacity
-                     style={styles.logoEquipoWrap}
+                     style={[
+                        styles.logoEquipoWrap,
+                        esEscritorio && styles.logoEquipoWrapDesktop,
+                     ]}
                      onPress={() => irDetalleEquipo(partidoInfo?.id_local)}
                      activeOpacity={0.85}
                      disabled={!partidoInfo?.id_local}
                   >
-                     <Image source={{ uri: partidoInfo?.logo_local }} style={styles.logoEquipo} />
+                     <Image
+                        source={{ uri: partidoInfo?.logo_local }}
+                        style={styles.logoEquipo}
+                     />
                   </TouchableOpacity>
-                  <Text style={styles.nombreEquipo} numberOfLines={2}>
+                  <Text
+                     style={[
+                        styles.nombreEquipo,
+                        esEscritorio && styles.nombreEquipoDesktop,
+                     ]}
+                     numberOfLines={2}
+                  >
                      {partidoInfo?.equipo_local}
                   </Text>
                </View>
-               <Text style={styles.golesText}>
+               <Text style={[styles.golesText, esEscritorio && styles.golesTextDesktop]}>
                   {partidoInfo?.goles_local != null && partidoInfo?.goles_visitante != null
                      ? `${partidoInfo.goles_local} - ${partidoInfo.goles_visitante}`
                      : '- -'}
                </Text>
-               <View style={styles.equipoCol}>
+               <View
+                  style={[
+                     styles.equipoCol,
+                     esEscritorio && styles.equipoColDesktop,
+                     esEscritorio && styles.equipoColVisitanteDesktop,
+                  ]}
+               >
                   <TouchableOpacity
-                     style={styles.logoEquipoWrap}
+                     style={[
+                        styles.logoEquipoWrap,
+                        esEscritorio && styles.logoEquipoWrapDesktop,
+                     ]}
                      onPress={() => irDetalleEquipo(partidoInfo?.id_visitante)}
                      activeOpacity={0.85}
                      disabled={!partidoInfo?.id_visitante}
                   >
-                     <Image source={{ uri: partidoInfo?.logo_visitante }} style={styles.logoEquipo} />
+                     <Image
+                        source={{ uri: partidoInfo?.logo_visitante }}
+                        style={styles.logoEquipo}
+                     />
                   </TouchableOpacity>
-                  <Text style={styles.nombreEquipo} numberOfLines={2}>
+                  <Text
+                     style={[
+                        styles.nombreEquipo,
+                        esEscritorio && styles.nombreEquipoVisitanteDesktop,
+                     ]}
+                     numberOfLines={2}
+                  >
                      {partidoInfo?.equipo_visitante}
                   </Text>
                </View>
             </View>
-            <View style={styles.fecha}>
+            <View style={[styles.fecha, esEscritorio && styles.fechaDesktop]}>
                <Ionicons name="time-outline" size={16} color="#d4e5f7" />
                <Text style={styles.horaText}>{partidoInfo?.dia} {partidoInfo?.nombre_mes} {partidoInfo?.anio}</Text>
             </View>  
@@ -164,7 +207,7 @@ export default function DetallePartidoScreen({navigation, route}) {
                   />
                )}
             </Tab.Screen>
-            <Tab.Screen name="Alineacion" options={{ tabBarLabel: 'ALINEACION' }}>
+            <Tab.Screen name="Alineacion" options={{ tabBarLabel: 'ALINEACIÓN' }}>
                {(props) => (
                   <AlineacionTab
                      {...props}
@@ -228,6 +271,13 @@ const styles = StyleSheet.create({
       paddingHorizontal: 14,
       paddingVertical: 16,
    },
+   resultadoContainerDesktop: {
+      marginTop: 10,
+      marginBottom: 8,
+      paddingVertical: 12,
+      flexDirection: 'row',
+      alignItems: 'center',
+   },
    jornadatext: {
       textAlign: 'center',
       fontSize: 16,
@@ -235,16 +285,35 @@ const styles = StyleSheet.create({
       color: '#eef6ff',
       marginBottom: 14,
    },
+   jornadaTextDesktop: {
+      minWidth: 92,
+      marginRight: 16,
+      marginBottom: 0,
+      fontSize: 15,
+   },
    marcadorRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+   },
+   marcadorRowDesktop: {
+      flex: 1,
+      justifyContent: 'center',
    },
    equipoCol: {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
       paddingHorizontal: 4,
+   },
+   equipoColDesktop: {
+      maxWidth: 280,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingHorizontal: 8,
+   },
+   equipoColVisitanteDesktop: {
+      flexDirection: 'row-reverse',
    },
    logoEquipoWrap: {
       width: 56,
@@ -254,6 +323,11 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'center',
       overflow: 'hidden',
+   },
+   logoEquipoWrapDesktop: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
    },
    logoEquipo: {
       width: '78%',
@@ -267,6 +341,19 @@ const styles = StyleSheet.create({
       fontSize: 13,
       fontWeight: '600',
    },
+   nombreEquipoDesktop: {
+      marginTop: 0,
+      marginLeft: 8,
+      textAlign: 'left',
+      fontSize: 14,
+   },
+   nombreEquipoVisitanteDesktop: {
+      marginTop: 0,
+      marginLeft: 0,
+      marginRight: 8,
+      textAlign: 'right',
+      fontSize: 14,
+   },
    golesText: {
       minWidth: 90,
       textAlign: 'center',
@@ -275,12 +362,21 @@ const styles = StyleSheet.create({
       fontWeight: '800',
       letterSpacing: 0.6,
    },
+   golesTextDesktop: {
+      minWidth: 82,
+      fontSize: 28,
+   },
    fecha: {
       marginTop: 14,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
+   },
+   fechaDesktop: {
+      minWidth: 150,
+      marginTop: 0,
+      marginLeft: 16,
    },
    horaText: {
       color: '#d4e5f7',

@@ -59,7 +59,7 @@ export default function DetalleTemporadaScreen({ navigation, route }) {
 					<Tab.Screen name="Partidos" options={{ tabBarLabel: 'PARTIDOS' }}>
 						{() => <PartidosTab temporada={temporadaLabel} />}
 					</Tab.Screen>
-					<Tab.Screen name="Clasificacion" options={{ tabBarLabel: 'CLASIFICACION' }}>
+					<Tab.Screen name="Clasificacion" options={{ tabBarLabel: 'CLASIFICACIÓN' }}>
 						{() => <ClasificacionTab temporada={temporadaLabel} />}
 					</Tab.Screen>
 					<Tab.Screen name="Info" options={{ tabBarLabel: 'INFO' }}>
@@ -68,7 +68,7 @@ export default function DetalleTemporadaScreen({ navigation, route }) {
 					<Tab.Screen name="Rankings" options={{ tabBarLabel: 'RANKINGS' }}>
 						{() => <RankingsTab temporada={temporadaLabel} />}
 					</Tab.Screen>
-					<Tab.Screen name="Analisis" options={{ tabBarLabel: 'ANALISIS' }}>
+					<Tab.Screen name="Analisis" options={{ tabBarLabel: 'ANÁLISIS' }}>
 						{() => <AnalisisTab temporada={temporadaLabel} />}
 					</Tab.Screen>
 					<Tab.Screen name="Equipos" options={{ tabBarLabel: 'EQUIPOS' }}>

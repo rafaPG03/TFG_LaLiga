@@ -8,6 +8,7 @@ import React, {
 import {
   ActivityIndicator,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -198,6 +199,7 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [scatterLegendVisible, setScatterLegendVisible] = useState(false);
   const requestIdRef = useRef(0);
+  const playerScrollRef = useRef(null);
 
   const axisStyle = useMemo(
     () => ({
@@ -261,6 +263,46 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
     () => (Array.isArray(payload?.jugadores) ? payload.jugadores : []),
     [payload?.jugadores],
   );
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || loading || error) return undefined;
+
+    const scrollNode =
+      playerScrollRef.current?.getScrollableNode?.() ?? playerScrollRef.current;
+
+    if (!scrollNode?.addEventListener) return undefined;
+
+    const handleWheel = (event) => {
+      if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+
+      const maxScrollLeft = scrollNode.scrollWidth - scrollNode.clientWidth;
+      const atStart = scrollNode.scrollLeft <= 0;
+      const atEnd = scrollNode.scrollLeft >= maxScrollLeft - 1;
+
+      if (
+        maxScrollLeft <= 0 ||
+        (event.deltaY < 0 && atStart) ||
+        (event.deltaY > 0 && atEnd)
+      ) {
+        return;
+      }
+
+      const multiplier =
+        event.deltaMode === 1
+          ? 16
+          : event.deltaMode === 2
+            ? scrollNode.clientWidth
+            : 1;
+
+      scrollNode.scrollLeft += event.deltaY * multiplier;
+      event.preventDefault();
+    };
+
+    scrollNode.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => scrollNode.removeEventListener("wheel", handleWheel);
+  }, [error, loading, players.length]);
+
   const playerMatches = useMemo(
     () =>
       Array.isArray(payload?.jugadores_partido)
@@ -572,8 +614,9 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
           <Text style={styles.filterHint}>{players.length} en plantilla</Text>
         </View>
         <ScrollView
+          ref={playerScrollRef}
           horizontal
-          showsHorizontalScrollIndicator={false}
+          showsHorizontalScrollIndicator={Platform.OS === "web"}
           contentContainerStyle={styles.playerRow}
         >
           <TouchableOpacity
@@ -972,8 +1015,8 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           {selectedPlayer
-            ? "Acciones defensivas del jugador"
-            : "Actividad de los defensas"}
+            ? "Rendimiento defensivo del jugador"
+            : "Rendimiento defensivo"}
         </Text>
         <Text style={styles.sectionSubtitle}>
           Entradas, intercepciones y bloqueos acumulados en la temporada.

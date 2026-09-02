@@ -20,6 +20,15 @@ const formatearFecha = (fecha) => {
   return dia && mes && anio ? `${dia}/${mes}/${anio}` : fecha;
 };
 
+const formatearPrediccion = (prediccion) => {
+  if (!prediccion) return "Sin predicción";
+  const texto = String(prediccion)
+    .replace(/victoria\s*local/i, "Victoria local")
+    .replace(/victoria\s*visitante/i, "Victoria visitante")
+    .replace(/empate/i, "Empate");
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+};
+
 const obtenerGoleador = (goleadores, idEquipo) =>
   [...(goleadores || [])]
     .filter((item) => Number(item.id_equipo) === Number(idEquipo))
@@ -74,11 +83,6 @@ export default function AnalisisPredicciones({ temporada }) {
         return (
           <TarjetaDesplegable
             key={clave}
-            titulo={`${partido.codigo_local || partido.equipo_local} - ${
-              partido.codigo_visitante || partido.equipo_visitante
-            }`}
-            subtitulo={subtitulo}
-            icono="football-outline"
             abierta={Boolean(abiertos[clave])}
             onPress={() =>
               setAbiertos((prev) => ({ ...prev, [clave]: !prev[clave] }))
@@ -88,81 +92,93 @@ export default function AnalisisPredicciones({ temporada }) {
                 id_partido: partido.id_partido,
               })
             }
-            cabeceraExtra={
-              partido.prediccion ? (
+            cabeceraPersonalizada={
+              <View style={styles.resumenPartido}>
+                <View style={styles.resumenEquipos}>
+                  <View style={styles.resumenEquipo}>
+                    {partido.logo_local ? (
+                      <Image
+                        source={{ uri: partido.logo_local }}
+                        style={styles.resumenLogo}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Ionicons
+                        name="shield-outline"
+                        size={24}
+                        color={colors.primary}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.resumenEquipoNombre,
+                        { color: colors.textStrong },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {partido.codigo_local || partido.equipo_local}
+                    </Text>
+                  </View>
+
+                  <View style={styles.resumenCentro}>
+                    <Text
+                      style={[styles.resumenHora, { color: colors.textStrong }]}
+                    >
+                      {String(partido.hora || "").slice(0, 5) || "--:--"}
+                    </Text>
+                    <Text
+                      style={[styles.resumenMeta, { color: colors.textMuted }]}
+                      numberOfLines={1}
+                    >
+                      {subtitulo}
+                    </Text>
+                  </View>
+
+                  <View style={styles.resumenEquipo}>
+                    {partido.logo_visitante ? (
+                      <Image
+                        source={{ uri: partido.logo_visitante }}
+                        style={styles.resumenLogo}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <Ionicons
+                        name="shield-outline"
+                        size={24}
+                        color={colors.primary}
+                      />
+                    )}
+                    <Text
+                      style={[
+                        styles.resumenEquipoNombre,
+                        { color: colors.textStrong },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {partido.codigo_visitante || partido.equipo_visitante}
+                    </Text>
+                  </View>
+                </View>
+
                 <View
                   style={[
-                    styles.prediccionChip,
+                    styles.resumenPrediccion,
                     { backgroundColor: colors.surfaceAlt },
                   ]}
                 >
                   <Text
                     style={[
-                      styles.prediccionChipTexto,
+                      styles.resumenPrediccionTexto,
                       { color: colors.primary },
                     ]}
                     numberOfLines={1}
                   >
-                    {partido.prediccion}
+                    {formatearPrediccion(partido.prediccion)}
                   </Text>
                 </View>
-              ) : null
+              </View>
             }
           >
-            <View style={styles.enfrentamiento}>
-              <View style={styles.equipo}>
-                {partido.logo_local ? (
-                  <Image
-                    source={{ uri: partido.logo_local }}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <Ionicons
-                    name="shield-outline"
-                    size={30}
-                    color={colors.primary}
-                  />
-                )}
-                <Text
-                  style={[styles.equipoNombre, { color: colors.textStrong }]}
-                  numberOfLines={2}
-                >
-                  {partido.equipo_local}
-                </Text>
-              </View>
-              <View style={styles.centroPartido}>
-                <Text style={[styles.hora, { color: colors.textStrong }]}>
-                  {String(partido.hora || "").slice(0, 5) || "--:--"}
-                </Text>
-                <Text style={[styles.fecha, { color: colors.textMuted }]}>
-                  {formatearFecha(partido.fecha)}
-                </Text>
-              </View>
-              <View style={styles.equipo}>
-                {partido.logo_visitante ? (
-                  <Image
-                    source={{ uri: partido.logo_visitante }}
-                    style={styles.logo}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <Ionicons
-                    name="shield-outline"
-                    size={30}
-                    color={colors.primary}
-                  />
-                )}
-                <Text
-                  style={[styles.equipoNombre, { color: colors.textStrong }]}
-                  numberOfLines={2}
-                >
-                  {partido.equipo_visitante}
-                </Text>
-              </View>
-            </View>
-
-            <Separador />
             <Text style={[styles.bloqueTitulo, { color: colors.textStrong }]}>
               Predicción del partido
             </Text>
@@ -220,7 +236,7 @@ export default function AnalisisPredicciones({ temporada }) {
 
             <Separador />
             <Text style={[styles.bloqueTitulo, { color: colors.textStrong }]}>
-              Máximos goleadores probables
+              Goleadores probables
             </Text>
             <View style={styles.goleadores}>
               <Goleador
@@ -297,29 +313,47 @@ function Goleador({ goleador, equipo }) {
 }
 
 const styles = StyleSheet.create({
-  prediccionChip: {
-    maxWidth: 86,
-    minHeight: 27,
-    paddingHorizontal: 7,
+  resumenPartido: { gap: 6 },
+  resumenEquipos: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  resumenEquipo: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: "center",
+  },
+  resumenLogo: { width: 32, height: 32 },
+  resumenEquipoNombre: {
+    width: "100%",
+    marginTop: 3,
+    fontSize: 10,
+    fontWeight: "900",
+    textAlign: "center",
+  },
+  resumenCentro: {
+    width: 94,
+    alignItems: "center",
+  },
+  resumenHora: { fontSize: 15, fontWeight: "900" },
+  resumenMeta: {
+    width: "100%",
+    marginTop: 2,
+    fontSize: 8,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  resumenPrediccion: {
+    alignSelf: "center",
+    maxWidth: "100%",
+    minHeight: 23,
+    paddingHorizontal: 10,
     borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
   },
-  prediccionChipTexto: { fontSize: 9, fontWeight: "900" },
-  enfrentamiento: { flexDirection: "row", alignItems: "center" },
-  equipo: { flex: 1, alignItems: "center" },
-  logo: { width: 48, height: 48 },
-  equipoNombre: {
-    minHeight: 34,
-    marginTop: 6,
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: "800",
-    textAlign: "center",
-  },
-  centroPartido: { width: 76, alignItems: "center" },
-  hora: { fontSize: 19, fontWeight: "900" },
-  fecha: { marginTop: 3, fontSize: 10, fontWeight: "600" },
+  resumenPrediccionTexto: { fontSize: 10, fontWeight: "900" },
   bloqueTitulo: { marginBottom: 10, fontSize: 14, fontWeight: "800" },
   golesEsperados: { flexDirection: "row", alignItems: "center" },
   golesEquipo: { flex: 1, alignItems: "center" },

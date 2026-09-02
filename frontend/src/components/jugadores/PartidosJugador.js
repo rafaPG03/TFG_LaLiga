@@ -218,15 +218,9 @@ export default function PartidosJugador({ id_jugador, route }) {
 
     return (
         <View style={styles.contenedor}>
-            <View style={styles.cabeceraFiltros}>
-                <Text style={styles.titulo}>Partidos</Text>
-                {temporadaSeleccionada ? (
-                    <Text style={styles.subtitulo}>Temporada {temporadaSeleccionada}</Text>
-                ) : null}
-            </View>
-
             {temporadasDisponibles.length > 0 ? (
                 <ScrollView
+                    style={styles.selectorTemporadas}
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     contentContainerStyle={styles.listaTemporadas}
@@ -276,22 +270,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingTop: 10,
     },
-    cabeceraFiltros: {
-        marginBottom: 8,
-    },
-    titulo: {
-        fontSize: 17,
-        fontWeight: '800',
-        color: '#12233f',
-    },
-    subtitulo: {
-        marginTop: 2,
-        fontSize: 12,
-        color: '#55708d',
-        fontWeight: '600',
+    selectorTemporadas: {
+        flexGrow: 0,
+        flexShrink: 0,
+        height: 44,
+        marginBottom: 10,
     },
     listaTemporadas: {
-        marginBottom: 10,
         paddingBottom: 10,
         gap: 8,
     },

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -28,6 +29,11 @@ const TRAYECTORIA_COLUMNAS = [
     { key: 'rating', label: 'Rating' },
     { key: 'temporadas', label: 'Temp.' },
 ];
+
+const TRAYECTORIA_COL_EQUIPO = Platform.OS === 'web' ? 140 : 110;
+const TRAYECTORIA_COL_STAT = Platform.OS === 'web' ? 82 : 76;
+const TRAYECTORIA_TABLE_WIDTH =
+    TRAYECTORIA_COL_EQUIPO + TRAYECTORIA_COLUMNAS.length * TRAYECTORIA_COL_STAT;
 
 const getNumero = (valor) => {
     const n = Number(valor);
@@ -429,7 +435,7 @@ export default function InfoJugador({ id_jugador, route }) {
                                                 </View>
                                             )}
                                             <Text style={styles.teamName} numberOfLines={1}>
-                                                {row.nombre_equipo || `Equipo ${row.id_equipo ?? '-'}`}
+                                                {row.codigo || '-'}
                                             </Text>
                                         </TouchableOpacity>
                                     ))}
@@ -788,6 +794,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     tablaWrap: {
+        width: '100%',
+        maxWidth: TRAYECTORIA_TABLE_WIDTH,
+        alignSelf: 'center',
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
@@ -799,7 +808,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     columnaEquipoFija: {
-        width: 170,
+        width: TRAYECTORIA_COL_EQUIPO,
         borderRightWidth: 1,
         borderRightColor: '#d2e0ec',
         backgroundColor: '#ffffff',
@@ -808,7 +817,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
     },
     headerCeldaEquipo: {
-        width: 170,
+        width: TRAYECTORIA_COL_EQUIPO,
         height: 40,
         flexDirection: 'row',
         alignItems: 'center',
@@ -826,7 +835,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#edf3f9',
     },
     headerCeldaStat: {
-        width: 76,
+        width: TRAYECTORIA_COL_STAT,
         height: 40,
         flexDirection: 'row',
         alignItems: 'center',
@@ -837,7 +846,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#1f4f7a',
     },
     filaEquipoFija: {
-        width: 170,
+        width: TRAYECTORIA_COL_EQUIPO,
         height: 46,
         paddingHorizontal: 10,
         flexDirection: 'row',
@@ -856,7 +865,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fbff',
     },
     cellStat: {
-        width: 76,
+        width: TRAYECTORIA_COL_STAT,
         height: 46,
         alignItems: 'center',
         justifyContent: 'center',

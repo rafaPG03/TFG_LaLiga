@@ -1,6 +1,6 @@
 const ai = require("../config/gemini");
 
-async function generateNaturalAnswer({ pregunta, sql, rows, historial = [] }) {
+async function generateNaturalAnswer({ pregunta, sql, rows, historial = [], signal }) {
   const prompt = `
 Eres un asistente especializado en estadísticas de fútbol.
 
@@ -18,6 +18,7 @@ REGLAS:
 - Si hay varios jugadores o equipos, resume los datos de forma comparativa.
 - Responde en menos de 100 palabras.
 - Usa un tono claro, útil y natural.
+- Si da muchos jugadores como respuesta, pide al usuario que sea más específico. 
 
 Historial reciente:
 ${JSON.stringify(historial, null, 2)}
@@ -35,6 +36,9 @@ ${JSON.stringify(rows, null, 2)}
   const response = await ai.models.generateContent({
     model: "gemini-3.5-flash-lite",
     contents: prompt,
+    config: {
+      abortSignal: signal,
+    },
   });
 
   return response.text.trim();

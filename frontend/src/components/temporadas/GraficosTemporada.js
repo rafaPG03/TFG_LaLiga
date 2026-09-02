@@ -1093,11 +1093,6 @@ export default function GraficosTemporada({ temporada }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <View>
-            <Text style={styles.subtitle}>
-              Temporada {temporadaBase}{" "}
-            </Text>
-          </View>
           <TouchableOpacity
             style={styles.selectorButton}
             onPress={() => setSelectorVisible(true)}

@@ -336,6 +336,7 @@ export function TarjetaDesplegable({
   abierta,
   onPress,
   onDetalle,
+  cabeceraPersonalizada,
   cabeceraExtra,
   children,
 }) {
@@ -353,39 +354,50 @@ export function TarjetaDesplegable({
         onPress={onPress}
         activeOpacity={0.8}
       >
-        {imagen ? (
-          <Image
-            source={{ uri: imagen }}
-            style={styles.tarjetaImagen}
-            resizeMode="contain"
-          />
-        ) : (
-          <View
-            style={[
-              styles.tarjetaImagenVacia,
-              { backgroundColor: colors.surfaceAlt },
-            ]}
-          >
-            <Ionicons name={icono} size={20} color={colors.primary} />
+        {cabeceraPersonalizada ? (
+          <View style={styles.tarjetaCabeceraPersonalizada}>
+            {cabeceraPersonalizada}
           </View>
+        ) : (
+          <>
+            {imagen ? (
+              <Image
+                source={{ uri: imagen }}
+                style={styles.tarjetaImagen}
+                resizeMode="contain"
+              />
+            ) : (
+              <View
+                style={[
+                  styles.tarjetaImagenVacia,
+                  { backgroundColor: colors.surfaceAlt },
+                ]}
+              >
+                <Ionicons name={icono} size={20} color={colors.primary} />
+              </View>
+            )}
+            <View style={styles.tarjetaTitulos}>
+              <Text
+                style={[styles.tarjetaTitulo, { color: colors.textStrong }]}
+                numberOfLines={1}
+              >
+                {titulo}
+              </Text>
+              {subtitulo ? (
+                <Text
+                  style={[
+                    styles.tarjetaSubtitulo,
+                    { color: colors.textMuted },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {subtitulo}
+                </Text>
+              ) : null}
+            </View>
+            {cabeceraExtra || null}
+          </>
         )}
-        <View style={styles.tarjetaTitulos}>
-          <Text
-            style={[styles.tarjetaTitulo, { color: colors.textStrong }]}
-            numberOfLines={1}
-          >
-            {titulo}
-          </Text>
-          {subtitulo ? (
-            <Text
-              style={[styles.tarjetaSubtitulo, { color: colors.textMuted }]}
-              numberOfLines={1}
-            >
-              {subtitulo}
-            </Text>
-          ) : null}
-        </View>
-        {cabeceraExtra || null}
         {onDetalle ? (
           <TouchableOpacity
             style={[
@@ -746,6 +758,7 @@ const styles = StyleSheet.create({
   tarjetaTitulos: { flex: 1, minWidth: 0 },
   tarjetaTitulo: { fontSize: 14, fontWeight: "800" },
   tarjetaSubtitulo: { marginTop: 3, fontSize: 12, fontWeight: "500" },
+  tarjetaCabeceraPersonalizada: { flex: 1, minWidth: 0 },
   botonDetalle: {
     width: 31,
     height: 31,

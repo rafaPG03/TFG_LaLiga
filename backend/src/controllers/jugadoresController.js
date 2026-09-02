@@ -436,6 +436,7 @@ const getTrayectoriaPorEquipo = async (req, res) => {
             SELECT
                 hjt.id_equipo,
                 e.nombre_equipo,
+                e.codigo,
                 e.logo,
                 COALESCE(SUM(hjt.partidos), 0) AS partidos,
                 COALESCE(SUM(hjt.goles), 0) AS goles,
@@ -444,7 +445,7 @@ const getTrayectoriaPorEquipo = async (req, res) => {
             FROM h_jugador_temporada hjt
             LEFT JOIN dim_equipo e ON e.id_equipo = hjt.id_equipo
             WHERE hjt.id_jugador = $1
-            GROUP BY hjt.id_equipo, e.nombre_equipo, e.logo
+            GROUP BY hjt.id_equipo, e.nombre_equipo, e.codigo, e.logo
         `;
 
         const result = await pool.query(query, [id_jugador]);

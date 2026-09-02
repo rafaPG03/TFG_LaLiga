@@ -20,6 +20,8 @@ const COLUMNAS = [
 ];
 
 const ORDEN_POSICION = ['Portero', 'Defensa', 'Mediocentro', 'Delantero'];
+const CONTENT_WIDTH = 760;
+const SELECTOR_BASE_WIDTH = CONTENT_WIDTH + 72;
 
 export default function PlantillaEquipo({ id_equipo, route }) {
 	const navigation = useNavigation();
@@ -202,9 +204,14 @@ export default function PlantillaEquipo({ id_equipo, route }) {
 			>
 				<View style={[styles.headerLabelWrap, styles.headerLabelWrapLeft]}>
 					<Text style={[styles.headerText, styles.headerJugadorText]}>Jugador</Text>
-					<Text style={styles.sortIcon}>
-						{sortState.key === 'nombre' ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
-					</Text>
+					{sortState.key === 'nombre' ? (
+						<Ionicons
+							name={sortState.direction === 'asc' ? 'chevron-up' : 'chevron-down'}
+							size={12}
+							color="#5f7f9b"
+							style={styles.sortIcon}
+						/>
+					) : null}
 				</View>
 			</TouchableOpacity>
 
@@ -217,9 +224,14 @@ export default function PlantillaEquipo({ id_equipo, route }) {
 				>
 					<View style={styles.headerLabelWrap}>
 						<Text style={styles.headerText}>{col.label}</Text>
-						<Text style={styles.sortIcon}>
-							{sortState.key === col.key ? (sortState.direction === 'asc' ? '↑' : '↓') : ''}
-						</Text>
+						{sortState.key === col.key ? (
+							<Ionicons
+								name={sortState.direction === 'asc' ? 'chevron-up' : 'chevron-down'}
+								size={12}
+								color="#5f7f9b"
+								style={styles.sortIcon}
+							/>
+						) : null}
 					</View>
 				</TouchableOpacity>
 			))}
@@ -272,15 +284,17 @@ export default function PlantillaEquipo({ id_equipo, route }) {
 
 	return (
 		<View style={styles.contenedor}>
-			<View style={styles.cabeceraFiltros}>
-				<Text style={styles.titulo}>Plantilla</Text>
-				{temporadaSeleccionada ? (
-					<Text style={styles.subtitulo}>Temporada {temporadaSeleccionada}</Text>
-				) : null}
-			</View>
-
 			{temporadasDisponibles.length > 0 ? (
 				<ScrollView
+					style={[
+						styles.selectorTemporadas,
+						{
+							maxWidth: Math.max(
+								SELECTOR_BASE_WIDTH,
+								temporadasDisponibles.length * 92,
+							),
+						},
+					]}
 					horizontal
 					showsHorizontalScrollIndicator={false}
 					contentContainerStyle={styles.listaTemporadas}
@@ -327,19 +341,13 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingTop: 10,
 	},
-	cabeceraFiltros: {
-		marginBottom: 8,
-	},
-	titulo: {
-		fontSize: 17,
-		fontWeight: '800',
-		color: '#12233f',
-	},
-	subtitulo: {
-		marginTop: 2,
-		fontSize: 12,
-		color: '#55708d',
-		fontWeight: '600',
+	selectorTemporadas: {
+		width: '100%',
+		alignSelf: 'center',
+		flexGrow: 0,
+		flexShrink: 0,
+		height: 44,
+		marginBottom: 10,
 	},
 	listaTemporadas: {
 		paddingBottom: 10,
@@ -376,6 +384,9 @@ const styles = StyleSheet.create({
 		paddingBottom: 16,
 	},
 	seccionWrap: {
+		width: '100%',
+		maxWidth: CONTENT_WIDTH,
+		alignSelf: 'center',
 		marginBottom: 12,
 	},
 	seccionTitulo: {
@@ -385,6 +396,9 @@ const styles = StyleSheet.create({
 		marginBottom: 6,
 	},
 	tablaWrap: {
+		width: '100%',
+		maxWidth: CONTENT_WIDTH,
+		alignSelf: 'center',
 		backgroundColor: '#ffffff',
 		borderRadius: 12,
 		borderWidth: 1,
@@ -399,22 +413,25 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#dbe6f0',
 	},
 	headerCell: {
-		flex: 1,
+		flexGrow: 1,
+		flexBasis: 0,
+		minWidth: 0,
 		paddingVertical: 8,
-		paddingHorizontal: 6,
+		paddingHorizontal: 0,
 		alignItems: 'center',
 		justifyContent: 'center',
 	},
 	headerJugador: {
-		flex: 2.4,
+		flexGrow: 2.4,
+		flexBasis: 0,
 		alignItems: 'flex-start',
+		paddingHorizontal: 6,
 	},
 	headerLabelWrap: {
-		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
 		width: '100%',
-		gap: 4,
+		position: 'relative',
 	},
 	headerLabelWrapLeft: {
 		justifyContent: 'flex-start',
@@ -428,10 +445,8 @@ const styles = StyleSheet.create({
 		textAlign: 'left',
 	},
 	sortIcon: {
-		fontSize: 11,
-		color: '#5f7f9b',
-		width: 10,
-		textAlign: 'center',
+		position: 'absolute',
+		right: 2,
 	},
 	filaRow: {
 		flexDirection: 'row',
@@ -440,7 +455,9 @@ const styles = StyleSheet.create({
 		borderBottomColor: '#eef2f6',
 	},
 	cellJugador: {
-		flex: 2.4,
+		flexGrow: 2.4,
+		flexBasis: 0,
+		minWidth: 0,
 		paddingVertical: 8,
 		paddingHorizontal: 6,
 	},
@@ -470,7 +487,9 @@ const styles = StyleSheet.create({
 		color: '#173a5d',
 	},
 	cellText: {
-		flex: 1,
+		flexGrow: 1,
+		flexBasis: 0,
+		minWidth: 0,
 		textAlign: 'center',
 		fontSize: 12,
 		fontWeight: '600',

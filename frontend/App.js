@@ -31,18 +31,13 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
-const AGENTE_ROUTES_PERMITIDAS = new Set([
-  'Inicio',
-  'Temporadas',
-  'DetalleTemporada',
-  'Equipos',
-  'DetalleEquipo',
-  'Jugadores',
-  'DetalleJugador',
-  'Partidos',
-  'DetallePartido',
-  'SimulacionTemporada',
-  'AnalisisIA',
+const AGENTE_ROUTES_OCULTAS = new Set([
+  'Login',
+  'Registro',
+  'Ajustes',
+  'Perfil',
+  'EditPerfil',
+  'CambiarContraseña',
 ]);
 
 const obtenerRutaActiva = (state) => {
@@ -121,7 +116,8 @@ function AppContent() {
     );
   }
 
-  const agenteVisible = Boolean(sesion) && AGENTE_ROUTES_PERMITIDAS.has(rutaActiva);
+  const agenteVisible = Boolean(sesion && rutaActiva)
+    && !AGENTE_ROUTES_OCULTAS.has(rutaActiva);
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>

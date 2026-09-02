@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,8 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../theme/ThemeContext';
 import { resolveThemeColor } from '../theme/themeRuntime';
 
-const COL_TEAM = 86;
-const COL_PROB = 58;
+const COL_TEAM = Platform.OS === 'web' ? 170 : 86;
+const COL_PROB = Platform.OS === 'web' ? 94 : 58;
 
 const PROB_COLUMNS = [
   {
@@ -43,6 +44,8 @@ const PROB_COLUMNS = [
     palette: ['#ffe9e9', '#ffc0c0', '#ff8181', '#e54848'],
   },
 ];
+
+const TABLE_WIDTH = COL_TEAM + PROB_COLUMNS.length * COL_PROB;
 
 const toNumber = (valor) => {
   const n = Number(valor);
@@ -195,7 +198,7 @@ export default function MontecarloClasificacion({ temporada, equipoId }) {
   }
 
   return (
-    <View>
+    <View style={styles.container}>
       <View style={styles.montecarloInfo}>
         <Ionicons name="analytics-outline" size={17} color="#1f4f7a" />
         <Text style={styles.montecarloInfoText}>
@@ -213,7 +216,7 @@ export default function MontecarloClasificacion({ temporada, equipoId }) {
       ) : (
         <View style={styles.tablaWrap}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View>
+            <View style={styles.tablaInner}>
               <View style={styles.headerRow}>
                 <View style={styles.teamHeaderCell}>
                   <Text style={styles.headerText}>Pos</Text>
@@ -243,6 +246,11 @@ export default function MontecarloClasificacion({ temporada, equipoId }) {
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    maxWidth: TABLE_WIDTH,
+    alignSelf: 'center',
+  },
   estadoPantalla: {
     minHeight: 180,
     alignItems: 'center',
@@ -274,11 +282,17 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tablaWrap: {
+    width: '100%',
+    maxWidth: TABLE_WIDTH,
+    alignSelf: 'center',
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#d2e0ec',
     backgroundColor: '#ffffff',
+  },
+  tablaInner: {
+    width: TABLE_WIDTH,
   },
   headerRow: {
     flexDirection: 'row',
@@ -301,7 +315,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: {
-    fontSize: 9,
+    fontSize: Platform.OS === 'web' ? 11 : 9,
     fontWeight: '700',
     color: '#1f4f7a',
     textAlign: 'center',
@@ -357,7 +371,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   teamName: {
-    fontSize: 11,
+    fontSize: Platform.OS === 'web' ? 12 : 11,
     fontWeight: '800',
     color: '#1d3850',
   },

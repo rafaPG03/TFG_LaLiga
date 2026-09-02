@@ -15,7 +15,8 @@ REGLAS OBLIGATORIAS:
 SELECT 'PREGUNTA_NO_SOPORTADA' AS respuesta;
 - Si no puedes responder con estas tablas, devuelve exactamente:
 SELECT 'PREGUNTA_NO_SOPORTADA' AS respuesta;
-- Para buscar jugadores por nombre, usa siempre ILIKE con comodines: (nombre ILIKE '%texto%' OR nombre_completo ILIKE '%texto%') y muestra siempre el 'nombre'
+- Si da muchos jugadores como respuesta, pide al usuario que sea más específico. Pero no uses LIMIT en la consulta, solo en la respuesta.
+- Para buscar jugadores por nombre, usa siempre ILIKE con comodines: (nombre ILIKE '%texto%') y muestra o busca siempre el 'nombre'
 - Nunca uses IN con nombres de jugadores o equipos salvo que sean ids.
 - Para que tomen en valor temporadas terminadas, asegura que sea en la jornada 38. Ejemplo: posiciones finales de un equipo en una temporada, usa h_equipo_temporada.jornada = 38
 - Para descensos, mira la posición final de la temporada, si es 20, 19 o 18, el equipo descendió.

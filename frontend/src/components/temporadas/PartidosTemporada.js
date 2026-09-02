@@ -208,13 +208,6 @@ export default function PartidosTemporada({ temporada }) {
 
   return (
     <View style={styles.contenedor}>
-      <View style={styles.cabeceraFiltros}>
-        <Text style={styles.titulo}>Partidos</Text>
-        {temporadaBase ? (
-          <Text style={styles.subtitulo}>Temporada {temporadaBase}</Text>
-        ) : null}
-      </View>
-
       <View style={styles.bloqueDropdown}>
         <TouchableOpacity
           style={styles.selectorDropdown}
@@ -281,20 +274,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f4f8fc',
     paddingHorizontal: 12,
     paddingTop: 10,
-  },
-  cabeceraFiltros: {
-    marginBottom: 8,
-  },
-  titulo: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#12233f',
-  },
-  subtitulo: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#55708d',
-    fontWeight: '600',
   },
   bloqueDropdown: {
     marginBottom: 10,

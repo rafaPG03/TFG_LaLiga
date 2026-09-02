@@ -392,7 +392,6 @@ export default function InfoTemporada({ temporada }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Temporada {temporadaBase}</Text>
         <View style={styles.metricasRow}>
           <View style={styles.metricaBadge}>
             <Text style={styles.metricaLabel}>Partidos</Text>

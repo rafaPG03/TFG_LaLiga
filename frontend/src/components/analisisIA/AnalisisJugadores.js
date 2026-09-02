@@ -316,7 +316,7 @@ export default function AnalisisJugadores({ temporada }) {
                 <Text
                   style={[styles.scoreEtiqueta, { color: colors.textMuted }]}
                 >
-                  Reciente
+                  Actual
                 </Text>
                 <Text style={[styles.scoreValor, { color: colors.textStrong }]}>
                   {formatearNumero(jugador.score_reciente)}

@@ -1,7 +1,7 @@
 const ai = require("../config/gemini");
 const SQL_CONTEXT = require("../prompts/promptChatBot");
 
-async function generarSQL(pregunta, historial = []) {
+async function generarSQL(pregunta, historial = [], signal) {
   const prompt = `
 ${SQL_CONTEXT}
 
@@ -23,6 +23,9 @@ ${pregunta}
   const response = await ai.models.generateContent({
     model: "gemini-3.5-flash-lite",
     contents: prompt,
+    config: {
+      abortSignal: signal,
+    },
   });
 
   return response.text.trim();

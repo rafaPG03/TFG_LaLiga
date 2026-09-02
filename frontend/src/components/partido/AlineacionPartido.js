@@ -189,8 +189,6 @@ const suplentesOrdenados = useMemo(() => ordenarLista(suplentes), [suplentes, or
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Alineaciones</Text>
-
       <View style={styles.selectorWrap}>
         {[equipos.local, equipos.visitante].map((equipo) => {
           const activo = equipoSeleccionado === equipo.key;
@@ -322,12 +320,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingTop: 14,
     paddingBottom: 28,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#12233f',
-    marginBottom: 12,
   },
   selectorWrap: {
     flexDirection: 'row',

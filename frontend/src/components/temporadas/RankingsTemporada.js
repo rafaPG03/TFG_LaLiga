@@ -290,9 +290,6 @@ export default function RankingsTemporada({ temporada }) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
       <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Rankings</Text>
-        <Text style={styles.sectionSubtitle}>Temporada {temporadaBase} - Top 25</Text>
-
         {renderSelector(
           'Atributo',
           meta?.atributo_label || atributoSeleccionado?.label || 'Selecciona un atributo',
@@ -408,18 +405,6 @@ const styles = StyleSheet.create({
     borderColor: '#dbe6f0',
     padding: 14,
     marginTop: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#12233f',
-  },
-  sectionSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    color: '#55708d',
-    fontWeight: '600',
-    marginBottom: 12,
   },
   selectorBlock: {
     marginBottom: 10,

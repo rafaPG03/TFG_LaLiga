@@ -336,8 +336,6 @@ export default function EventosTab({ route, navigation }) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Eventos del partido</Text>
-
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       {!error && eventosOrdenados.length === 0 ? (
@@ -438,12 +436,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 16,
     paddingBottom: 30,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#12233f",
-    marginBottom: 12,
   },
   errorText: {
     color: "#b91c1c",

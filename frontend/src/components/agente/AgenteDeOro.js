@@ -34,6 +34,9 @@ const SUGERENCIAS = [
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL;
 const MAX_HISTORIAL_MENSAJES = 12;
+const CHATBOT_TIMEOUT_MS = 12000;
+const CHATBOT_TIMEOUT_CODE = 'CHATBOT_TIMEOUT';
+const CHATBOT_TIMEOUT_MESSAGE = 'La consulta está tardando demasiado. Intenta indicar de forma más concreta el jugador, equipo, temporada o estadística que buscas.';
 
 const crearId = (prefijo) => `${prefijo}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
@@ -100,6 +103,27 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
     });
   }, [mensajes, modalVisible]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !modalVisible) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        cerrar();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [modalVisible]);
+
   const puedeEnviar = useMemo(() => {
     return texto.trim().length > 0 && !cargando;
   }, [texto, cargando]);
@@ -124,6 +148,11 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
     setError('');
     setCargando(true);
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, CHATBOT_TIMEOUT_MS);
+
     try {
       if (!API_BASE) {
         throw new Error('API base no configurada');
@@ -135,12 +164,15 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ pregunta, historial }),
+        signal: abortController.signal,
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data?.error || 'No se pudo obtener respuesta');
+        const requestError = new Error(data?.error || 'No se pudo obtener respuesta');
+        requestError.code = data?.code;
+        throw requestError;
       }
 
       const respuestaTexto = typeof data?.respuesta === 'string'
@@ -163,18 +195,26 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
         },
       ]);
     } catch (err) {
-      const errorText = err?.message || 'Error de conexion con el agente';
+      const isTimeout = err?.name === 'AbortError' || err?.code === CHATBOT_TIMEOUT_CODE;
+      const errorText = isTimeout
+        ? 'La solicitud ha superado el tiempo límite.'
+        : err?.message || 'Error de conexión con el agente';
+      const assistantErrorText = isTimeout
+        ? CHATBOT_TIMEOUT_MESSAGE
+        : 'Ahora mismo no puedo responder. Inténtalo de nuevo en unos segundos.';
+
       setError(errorText);
       setMensajes((prev) => [
         ...prev,
         {
           id: crearId('error'),
           role: 'assistant',
-          text: 'Ahora mismo no puedo responder. Intentalo de nuevo en unos segundos.',
+          text: assistantErrorText,
           contextEligible: false,
         },
       ]);
     } finally {
+      clearTimeout(timeoutId);
       setCargando(false);
     }
   };
@@ -220,10 +260,11 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
           <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={cerrar} />
 
           <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}
+            enabled={Platform.OS !== 'web'}
             style={styles.modalShell}
           >
-            <View style={styles.card}>
+            <View style={[styles.card, styles.cardWeb]}>
               <LinearGradient
                 colors={['#1f3550', '#17304b', '#0f2238']}
                 start={{ x: 0, y: 0 }}
@@ -236,7 +277,6 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
                   </View>
                   <View>
                     <Text style={styles.title}>Agente de Oro</Text>
-                    <Text style={styles.subtitle}>Asistente deportivo premium</Text>
                   </View>
                 </View>
 
@@ -343,10 +383,6 @@ export default function AgenteDeOro({ visible = true, resetConversation = false 
                   </View>
 
                   {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-                  <Text style={styles.composerNote}>
-                    Gemini respondera con datos reales de tu base de datos.
-                  </Text>
                 </View>
               </View>
             </View>
@@ -382,14 +418,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(10, 18, 28, 0.42)',
+    overflow: 'hidden',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
   },
   modalShell: {
+    flex: 1,
     width: '100%',
+    justifyContent: 'flex-end',
     paddingHorizontal: 14,
+    paddingTop: 14,
     paddingBottom: Platform.OS === 'ios' ? 18 : 14,
+    minHeight: 0,
   },
   card: {
     width: '100%',
@@ -399,7 +440,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#fffaf0',
     borderWidth: 1,
     borderColor: '#e3cd8a',
+    maxHeight: '100%',
   },
+  cardWeb: Platform.select({
+    web: {
+      height: '82vh',
+      maxHeight: 'calc(100vh - 28px)',
+    },
+    default: {},
+  }),
   header: {
     paddingHorizontal: 16,
     paddingVertical: 14,

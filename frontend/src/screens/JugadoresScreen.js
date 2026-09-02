@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   Image,
 } from 'react-native';
@@ -23,12 +24,25 @@ import { useTheme } from '../theme/ThemeContext';
 export default function JugadoresScreen({navigation}) {
    const { jugadoresFav } = useFavoritos();
    const { colors } = useTheme();
+   const { width } = useWindowDimensions();
    const [listaMasPartidos, setListaMasPartidos] = useState([]);
    const [listaJugadores, setListaJugadores] = useState([]);
    const [textoBusqueda, setTextoBusqueda] = useState('');
    const [yaCargadosTodos, setYaCargadosTodos] = useState(false);
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
+
+   const esEscritorio = Platform.OS === 'web' && width >= 768;
+   const separacionGrid = 14;
+   const columnasEscritorio = Math.max(
+      3,
+      Math.min(6, Math.floor((width - 32 + separacionGrid) / (240 + separacionGrid)))
+   );
+   const numeroColumnas = esEscritorio ? columnasEscritorio : 2;
+   const anchoTarjetaEscritorio = Math.min(
+      280,
+      (width - 32 - separacionGrid * (numeroColumnas - 1)) / numeroColumnas
+   );
 
    const ordenarConFavoritosPrimero = (base) => {
       const favSet = new Set(jugadoresFav.map((id) => Number(id)));
@@ -167,15 +181,27 @@ export default function JugadoresScreen({navigation}) {
             />
          </View>
          <FlatList
+            key={`jugadores-${numeroColumnas}`}
             data={jugadoresFiltrados}
             keyExtractor={(item) => item.id_jugador.toString()}
-            numColumns={2}
-            columnWrapperStyle={styles.columnWrapper}
+            numColumns={numeroColumnas}
+            columnWrapperStyle={[
+               styles.columnWrapper,
+               esEscritorio && styles.columnWrapperDesktop,
+            ]}
             contentContainerStyle={styles.screenContent}
             ListEmptyComponent={renderEstadoVacio}
             renderItem={({ item }) => (
                <TouchableOpacity
-                  style={styles.jugadorCard}
+                  style={[
+                     styles.jugadorCard,
+                     esEscritorio
+                        ? [
+                             styles.jugadorCardDesktop,
+                             { width: anchoTarjetaEscritorio },
+                          ]
+                        : styles.jugadorCardMobile,
+                  ]}
                   onPress={() => irDetallesJugador(item.id_jugador)}
                   activeOpacity={0.85}
                >
@@ -187,11 +213,20 @@ export default function JugadoresScreen({navigation}) {
                   <View style={styles.logoContainer}>
                   <Image
                      source={item.foto ? { uri: item.foto } : require('../assets/player_default.png')}
-                     style={styles.jugadorFoto}
+                     style={[
+                        styles.jugadorFoto,
+                        esEscritorio && styles.jugadorFotoDesktop,
+                     ]}
                      resizeMode="cover" // Cover suele quedar mejor para caras de jugadores
                   />
                   </View>
-                  <Text style={styles.jugadorName} numberOfLines={2}>
+                  <Text
+                     style={[
+                        styles.jugadorName,
+                        esEscritorio && styles.jugadorNameDesktop,
+                     ]}
+                     numberOfLines={2}
+                  >
                      {item.nombre}
                   </Text>
                </TouchableOpacity>
@@ -229,10 +264,13 @@ const styles = StyleSheet.create({
    columnWrapper: {
       justifyContent: 'space-between',
       marginBottom: 12,
-  },
-     jugadorCard: {
-      width: '48.5%',
-      aspectRatio: 1,
+   },
+   columnWrapperDesktop: {
+      justifyContent: 'center',
+      gap: 14,
+      marginBottom: 14,
+   },
+   jugadorCard: {
       borderRadius: 8,
       backgroundColor: '#ffffff',
       borderWidth: 1,
@@ -246,7 +284,14 @@ const styles = StyleSheet.create({
       shadowOpacity: 0.08,
       shadowRadius: 4,
       elevation: 2,
-         position: 'relative',
+      position: 'relative',
+   },
+   jugadorCardMobile: {
+      width: '48.5%',
+      aspectRatio: 1,
+   },
+   jugadorCardDesktop: {
+      height: 240,
    },
       favoritoFloat: {
          position: 'absolute',
@@ -264,6 +309,10 @@ const styles = StyleSheet.create({
       width: 64,
       height: 64,
    },
+   jugadorFotoDesktop: {
+      width: 120,
+      height: 120,
+   },
    jugadorName: {
       width: '100%',
       textAlign: 'center',
@@ -271,6 +320,11 @@ const styles = StyleSheet.create({
       fontWeight: '700',
       color: '#1d3850',
       minHeight: 36,
+   },
+   jugadorNameDesktop: {
+      fontSize: 17,
+      lineHeight: 22,
+      minHeight: 44,
    },
      emptyState: {
       backgroundColor: '#ffffff',

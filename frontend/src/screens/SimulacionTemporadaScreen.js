@@ -283,12 +283,8 @@ function ResultadosTab({
     <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
       <View style={styles.topBlock}>
         <View>
-          <Text style={styles.title}>Resultados manuales</Text>
-          <Text style={styles.subtitle}>Temporada actual {temporada || '-'}</Text>
-        </View>
-        <View style={styles.statusPill}>
-          <Ionicons name="create-outline" size={15} color="#1f6fa7" />
-          <Text style={styles.statusText}>Edicion</Text>
+          <Text style={styles.title}>Simula tu temporada</Text>
+          <Text style={styles.subtitle}>Pon tus resultados y analiza las probabildades</Text>
         </View>
       </View>
 
@@ -355,7 +351,7 @@ function ResultadosTab({
       <View style={styles.actionRow}>
         <TouchableOpacity style={styles.primaryAction} onPress={onRecalcular} activeOpacity={0.85}>
           <Ionicons name="calculator-outline" size={18} color="#ffffff" />
-          <Text style={styles.primaryActionText}>Recalcular escenario</Text>
+          <Text style={styles.primaryActionText}>Calcular</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.secondaryAction} onPress={onReset} activeOpacity={0.85}>
           <Ionicons name="refresh-outline" size={18} color="#1f6fa7" />
@@ -444,7 +440,7 @@ function ClasificacionTab({
             </View>
             {PROB_COLUMNS.map((col) => (
               <View key={col.key} style={styles.probHeaderCell}>
-                <Text style={styles.headerText} numberOfLines={2} adjustsFontSizeToFit>
+                <Text style={styles.headerText} numberOfLines={1} adjustsFontSizeToFit>
                   {col.label}
                 </Text>
               </View>
@@ -490,10 +486,7 @@ function ClasificacionTab({
         <View>
           <Text style={styles.title}>Escenario actual</Text>
         </View>
-        <View style={styles.statusPill}>
-          <Ionicons name="stats-chart-outline" size={15} color="#1f6fa7" />
-          <Text style={styles.statusText}>Analisis</Text>
-        </View>
+
       </View>
 
       <View style={styles.resultTabs}>
@@ -1064,7 +1057,7 @@ const styles = StyleSheet.create({
   primaryActionText: {
     marginLeft: 7,
     color: '#ffffff',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
   },
   secondaryAction: {

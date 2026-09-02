@@ -140,10 +140,10 @@ export default function DetalleJugadorScreen({navigation, route}) {
             <Tab.Screen name="PARTIDOS" options={{ tabBarLabel: 'PARTIDOS' }}>
                {() => <PartidosJugTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="TRAYECTORIA" options={{ tabBarLabel: 'TRAYECTORIA' }}>
+            <Tab.Screen name="TRAYECTORIA" options={{ tabBarLabel: 'TRAYECTORÍA' }}>
                {() => <TrayectoriaTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="STATS" options={{ tabBarLabel: 'STATS' }}>
+            <Tab.Screen name="STATS" options={{ tabBarLabel: 'ANÁLISIS' }}>
                {() => <StatsJugTab id_jugador={id_jugador} />}
             </Tab.Screen>
          </Tab.Navigator>

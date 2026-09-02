@@ -463,25 +463,17 @@ export default function StatsJugador({ id_jugador, route }) {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.containerContent}>
-                <View style={styles.headerRow}>
-                    <View>
-                        <Text style={styles.title}>Estadísticas</Text>
-                        <Text style={styles.subtitle}>
-                            {temporadaSeleccionada ? `Temporada ${temporadaSeleccionada}` : 'Sin temporada'}
-                        </Text>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.compareButton}
-                        onPress={() => setModalVisible(true)}
-                        activeOpacity={0.85}
-                        disabled={comparaciones.length >= 1}
-                    >
-                        <Ionicons name="person-add" size={16} color="#1f6fa7" />
-                        <Text style={styles.compareButtonText}>
-                            {comparaciones.length >= 1 ? 'Limite alcanzado' : 'Comparar'}
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                <TouchableOpacity
+                    style={styles.compareButton}
+                    onPress={() => setModalVisible(true)}
+                    activeOpacity={0.85}
+                    disabled={comparaciones.length >= 1}
+                >
+                    <Ionicons name="person-add" size={16} color="#1f6fa7" />
+                    <Text style={styles.compareButtonText}>
+                        {comparaciones.length >= 1 ? 'Limite alcanzado' : 'Comparar'}
+                    </Text>
+                </TouchableOpacity>
 
                 {temporadasDisponibles.length > 0 ? (
                     <ScrollView
@@ -899,24 +891,8 @@ const styles = StyleSheet.create({
         padding: 16,
         paddingBottom: 32,
     },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 8,
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: '800',
-        color: '#0f2743',
-    },
-    subtitle: {
-        marginTop: 2,
-        fontSize: 12,
-        color: '#5f7f9b',
-        fontWeight: '600',
-    },
     compareButton: {
+        alignSelf: 'flex-end',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 12,
@@ -925,6 +901,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#eaf3fb',
         borderWidth: 1,
         borderColor: '#d9e5f0',
+        marginBottom: 8,
     },
     compareButtonText: {
         marginLeft: 6,

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
 	ActivityIndicator,
 	Image,
+	Platform,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -18,8 +19,8 @@ const VISTAS = [
 	{ key: 'PROBABILIDADES', label: 'PROBABILIDADES' },
 ];
 
-const COL_TEAM = 210;
-const COL_STAT = 48;
+const COL_TEAM = Platform.OS === 'web' ? 220 : 210;
+const COL_STAT = Platform.OS === 'web' ? 58 : 48;
 
 const STATS = [
 	{ key: 'puntos', label: 'Pts' },
@@ -31,6 +32,9 @@ const STATS = [
 	{ key: 'gc', label: 'GD' },
 	{ key: 'dg', label: 'DG' },
 ];
+
+const TABLE_WIDTH = COL_TEAM + STATS.length * COL_STAT;
+const SELECTORS_WIDTH = TABLE_WIDTH + 72;
 
 const toNumber = (valor) => {
 	const n = Number(valor);
@@ -363,15 +367,6 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
-			<View style={styles.topBar}>
-				<Text style={styles.title}>Clasificacion</Text>
-				<Text style={styles.subtitle}>
-					{vista === 'PROBABILIDADES'
-						? 'Probabilidades de final de temporada'
-						: 'Tabla por temporada y jornada'}
-				</Text>
-			</View>
-
 			<View style={styles.vistaRow}>
 				{VISTAS.map((item) => (
 					<TouchableOpacity
@@ -387,7 +382,12 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 				))}
 			</View>
 
-			<View style={styles.selectorBlock}>
+			<View
+				style={[
+					styles.selectorBlock,
+					{ maxWidth: Math.max(SELECTORS_WIDTH, temporadas.length * 64) },
+				]}
+			>
 				<Text style={styles.selectorLabel}>Temporada</Text>
 				<ScrollView horizontal showsHorizontalScrollIndicator={false}>
 					<View style={styles.selectorRow}>
@@ -455,7 +455,7 @@ export default function ClasificacionEquipo({ id_equipo, route }) {
 					) : (
 						<View style={styles.tablaWrap}>
 							<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-								<View>
+								<View style={styles.tablaInner}>
 									<View style={styles.headerRow}>
 										<View style={styles.teamHeaderCell}>
 											<Text style={styles.headerText}>Pos</Text>
@@ -489,24 +489,12 @@ const styles = StyleSheet.create({
 		paddingTop: 10,
 		paddingBottom: 24,
 	},
-	topBar: {
-		marginBottom: 10,
-	},
-	title: {
-		fontSize: 17,
-		fontWeight: '800',
-		color: '#12233f',
-	},
-	subtitle: {
-		marginTop: 2,
-		fontSize: 12,
-		color: '#55708d',
-		fontWeight: '600',
-	},
 	vistaRow: {
+		width: '100%',
+		maxWidth: SELECTORS_WIDTH,
+		alignSelf: 'center',
 		flexDirection: 'row',
 		gap: 8,
-		marginTop: 8,
 		marginBottom: 2,
 	},
 	vistaBtn: {
@@ -528,6 +516,9 @@ const styles = StyleSheet.create({
 		color: '#ffffff',
 	},
 	selectorBlock: {
+		width: '100%',
+		maxWidth: SELECTORS_WIDTH,
+		alignSelf: 'center',
 		marginTop: 10,
 	},
 	selectorLabel: {
@@ -563,6 +554,9 @@ const styles = StyleSheet.create({
 		color: '#ffffff',
 	},
 	modoRow: {
+		width: '100%',
+		maxWidth: SELECTORS_WIDTH,
+		alignSelf: 'center',
 		flexDirection: 'row',
 		gap: 8,
 		marginTop: 14,
@@ -587,11 +581,17 @@ const styles = StyleSheet.create({
 		color: '#ffffff',
 	},
 	tablaWrap: {
+		width: '100%',
+		maxWidth: TABLE_WIDTH,
+		alignSelf: 'center',
 		borderRadius: 12,
 		overflow: 'hidden',
 		borderWidth: 1,
 		borderColor: '#d2e0ec',
 		backgroundColor: '#ffffff',
+	},
+	tablaInner: {
+		width: TABLE_WIDTH,
 	},
 	headerRow: {
 		flexDirection: 'row',

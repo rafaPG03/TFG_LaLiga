@@ -5,14 +5,15 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
+  Platform,
   TouchableOpacity,
   StyleSheet,
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const COL_JUGADOR = 150;
-const COL_BASE = 62;
+const COL_JUGADOR = Platform.OS === 'web' ? 170 : 150;
+const COL_BASE = Platform.OS === 'web' ? 72 : 62;
 const ROW_HEIGHT = 44;
 const HEADER_HEIGHT = 40;
 
@@ -220,6 +221,9 @@ export default function AnalisisJugador({ route }) {
         return [...BASE_COLUMNS, ...optionalCols];
     }, [statsSeleccionadas]);
 
+    const anchoTabla = COL_JUGADOR + 20 + columnasVisibles.length * COL_BASE;
+    const anchoSelectores = anchoTabla + 72;
+
     const titularesOrdenados = useMemo(() => ordenarPorColumna(titulares, sortState), [titulares, sortState]);
     const suplentesOrdenados = useMemo(() => ordenarPorColumna(suplentes, sortState), [suplentes, sortState]);
 
@@ -300,9 +304,14 @@ export default function AnalisisJugador({ route }) {
 
     // Renderizado de tabla para titulares o suplentes
     const renderTabla = (titulo, jugadores) => (
-        <View style={styles.seccionWrap}>
+        <View style={[styles.seccionWrap, { maxWidth: anchoTabla }]}>
             <Text style={styles.seccionTitulo}>{titulo}</Text>
-            <View style={styles.tablaWrap}>
+            <View
+                style={[
+                    styles.tablaWrap,
+                    { maxWidth: anchoTabla },
+                ]}
+            >
                 {jugadores.length > 0 ? (
                     <View style={styles.tablaGrid}>
                         <View style={styles.columnaJugadorFija}>
@@ -337,7 +346,7 @@ export default function AnalisisJugador({ route }) {
             <Text style={styles.title}>Analisis de jugadores</Text>
 
             {/* Selector de equipo */}
-            <View style={styles.selectorWrap}>
+            <View style={[styles.selectorWrap, { maxWidth: anchoSelectores }]}>
                 {[equipos.local, equipos.visitante].map((equipo) => {
                     const activo = equipoSeleccionado === equipo.key;
                     return (
@@ -364,7 +373,7 @@ export default function AnalisisJugador({ route }) {
 
             {/* Boton para elegir stats */}
             <TouchableOpacity
-                style={styles.statsButton}
+                style={[styles.statsButton, { maxWidth: anchoSelectores }]}
                 onPress={() => setModalVisible(true)}
                 activeOpacity={0.85}
             >
@@ -452,6 +461,8 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     selectorWrap: {
+        width: '100%',
+        alignSelf: 'center',
         flexDirection: 'row',
         gap: 8,
         marginBottom: 10,
@@ -497,6 +508,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     statsButton: {
+        width: '100%',
+        alignSelf: 'center',
         marginBottom: 10,
         paddingHorizontal: 12,
         paddingVertical: 10,
@@ -541,6 +554,8 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     seccionWrap: {
+        width: '100%',
+        alignSelf: 'center',
         marginTop: 12,
     },
     seccionTitulo: {
@@ -550,6 +565,8 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     tablaWrap: {
+        width: '100%',
+        alignSelf: 'center',
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,

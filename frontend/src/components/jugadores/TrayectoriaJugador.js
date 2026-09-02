@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Image,
+    Platform,
     ScrollView,
     StyleSheet,
     Text,
@@ -31,6 +32,9 @@ const COLUMNAS_PORTERO = [
     { key: 'rojas', label: 'TR' },
 ];
 
+const COL_EQUIPO = Platform.OS === 'web' ? 140 : 110;
+const COL_STAT = Platform.OS === 'web' ? 82 : 76;
+
 const toNumber = (valor) => {
     const n = Number(valor);
     return Number.isFinite(n) ? n : 0;
@@ -51,11 +55,6 @@ export default function TrayectoriaJugador({ id_jugador, route }) {
     const [esPortero, setEsPortero] = useState(false);
     const [sortKey, setSortKey] = useState('temporada');
     const [sortDir, setSortDir] = useState('desc');
-
-    const COL_EQUIPO = 170;
-    const COL_STAT = 76;
-    const ROW_HEIGHT = 46;
-    const HEADER_HEIGHT = 40;
 
     useEffect(() => {
         let activo = true;
@@ -200,20 +199,18 @@ export default function TrayectoriaJugador({ id_jugador, route }) {
 
     return (
         <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
-            <View style={styles.topBar}>
-                <Text style={styles.title}>Trayectoria</Text>
-                <Text style={styles.subtitle}>
-                    Orden: {columnasVisibles.find((c) => c.key === sortKey)?.label || 'Temp.'} ({sortDir === 'desc' ? 'desc' : 'asc'})
-                </Text>
-            </View>
-
             {trayectoriaOrdenada.length === 0 ? (
                 <View style={styles.emptyRow}>
                     <Ionicons name="stats-chart-outline" size={18} color="#6d839a" />
                     <Text style={styles.emptyText}>No hay registros de trayectoria</Text>
                 </View>
             ) : (
-                <View style={styles.tablaWrap}>
+                <View
+                    style={[
+                        styles.tablaWrap,
+                        { maxWidth: COL_EQUIPO + columnasVisibles.length * COL_STAT },
+                    ]}
+                >
                     <View style={styles.tablaGrid}>
                         <View style={styles.columnaEquipoFija}>
                             <View style={styles.headerCeldaEquipo}>
@@ -222,10 +219,7 @@ export default function TrayectoriaJugador({ id_jugador, route }) {
 
                             {trayectoriaOrdenada.map((row, idx) => {
                                 const equipo = equiposById[Number(row.id_equipo)] || null;
-                                const nombreEquipo =
-                                    equipo?.nombre_equipo ||
-                                    equipo?.nombre ||
-                                    `Equipo ${row.id_equipo ?? '-'}`;
+                                const codigoEquipo = equipo?.codigo || '-';
                                 const logoEquipo = equipo?.logo || equipo?.logo_url || null;
 
                                 return (
@@ -241,7 +235,7 @@ export default function TrayectoriaJugador({ id_jugador, route }) {
                                             </View>
                                         )}
                                         <Text style={styles.teamName} numberOfLines={1}>
-                                            {nombreEquipo}
+                                            {codigoEquipo}
                                         </Text>
                                     </View>
                                 );
@@ -304,21 +298,9 @@ const styles = StyleSheet.create({
         paddingTop: 10,
         paddingBottom: 24,
     },
-    topBar: {
-        marginBottom: 10,
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '800',
-        color: '#12233f',
-    },
-    subtitle: {
-        marginTop: 2,
-        fontSize: 12,
-        color: '#55708d',
-        fontWeight: '600',
-    },
     tablaWrap: {
+        width: '100%',
+        alignSelf: 'center',
         borderRadius: 12,
         overflow: 'hidden',
         borderWidth: 1,
@@ -330,7 +312,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     columnaEquipoFija: {
-        width: 170,
+        width: COL_EQUIPO,
         borderRightWidth: 1,
         borderRightColor: '#d2e0ec',
         backgroundColor: '#ffffff',
@@ -339,7 +321,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ffffff',
     },
     headerCeldaEquipo: {
-        width: 170,
+        width: COL_EQUIPO,
         height: 40,
         flexDirection: 'row',
         alignItems: 'center',
@@ -357,7 +339,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#edf3f9',
     },
     headerCeldaStat: {
-        width: 76,
+        width: COL_STAT,
         height: 40,
         flexDirection: 'row',
         alignItems: 'center',
@@ -368,7 +350,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#1f4f7a',
     },
     filaEquipoFija: {
-        width: 170,
+        width: COL_EQUIPO,
         height: 46,
         paddingHorizontal: 10,
         flexDirection: 'row',
@@ -387,7 +369,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8fbff',
     },
     cellStat: {
-        width: 76,
+        width: COL_STAT,
         height: 46,
         alignItems: 'center',
         justifyContent: 'center',

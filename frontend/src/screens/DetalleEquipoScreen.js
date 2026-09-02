@@ -169,19 +169,19 @@ export default function DetalleEquipoScreen({ navigation, route }) {
         <Tab.Screen name="Partidos" options={{ tabBarLabel: "PARTIDOS" }}>
           {() => <PartidosEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
-        <Tab.Screen name="Trayectoria" options={{ tabBarLabel: "TRAYECTORIA" }}>
+        <Tab.Screen name="Trayectoria" options={{ tabBarLabel: "TRAYECTORÍA" }}>
           {() => <TrayectoriaEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
         <Tab.Screen
           name="Clasificacion"
-          options={{ tabBarLabel: "CLASIFICACION" }}
+          options={{ tabBarLabel: "CLASIFICACIÓN" }}
         >
           {() => <ClasificacionEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
         <Tab.Screen name="Plantilla" options={{ tabBarLabel: "PLANTILLA" }}>
           {() => <PlantillaEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
-        <Tab.Screen name="Analisis" options={{ tabBarLabel: "ANALISIS" }}>
+        <Tab.Screen name="Analisis" options={{ tabBarLabel: "ANÁLISIS" }}>
           {() => <AnalisisEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
       </Tab.Navigator>

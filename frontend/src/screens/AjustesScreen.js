@@ -23,7 +23,6 @@ export default function AjustesScreen({ navigation }) {
     >
       <CustomHeader title="Ajustes" onMenuPress={() => navigation.openDrawer()} />
       <ScrollView contentContainerStyle={styles.screenContent}>
-        <Text style={styles.title}>Ajustes</Text>
         <Text style={styles.sectionTitle}>Apariencia</Text>
 
         <View style={styles.settingCard}>

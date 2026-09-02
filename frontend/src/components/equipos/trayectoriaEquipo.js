@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
 	ActivityIndicator,
 	Image,
+	Platform,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -21,8 +22,9 @@ const COLUMNAS = [
 	{ key: 'dg', label: 'DG' },
 ];
 
-const COL_WIDTH = 60;
-const DETAIL_WIDTH = 72;
+const COL_WIDTH = Platform.OS === 'web' ? 72 : 60;
+const DETAIL_WIDTH = Platform.OS === 'web' ? 80 : 72;
+const TABLE_WIDTH = COLUMNAS.length * COL_WIDTH + DETAIL_WIDTH;
 
 const toNumber = (valor) => {
 	const n = Number(valor);
@@ -245,11 +247,6 @@ export default function TrayectoriaEquipo({ id_equipo, route }) {
 
 	return (
 		<ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
-			<View style={styles.topBar}>
-				<Text style={styles.title}>Trayectoria del equipo</Text>
-				<Text style={styles.subtitle}>Clasificacion por temporada</Text>
-			</View>
-
 			{trayectoriaOrdenada.length === 0 ? (
 				<View style={styles.emptyRow}>
 					<Ionicons name="stats-chart-outline" size={18} color="#6d839a" />
@@ -258,7 +255,7 @@ export default function TrayectoriaEquipo({ id_equipo, route }) {
 			) : (
 				<View style={styles.tablaWrap}>
 					<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-						<View>
+						<View style={styles.tablaInner}>
 							<View style={styles.headerRow}>
 								{COLUMNAS.map((col) => {
 									const active = sortKey === col.key;
@@ -436,26 +433,18 @@ const styles = StyleSheet.create({
 		paddingTop: 10,
 		paddingBottom: 24,
 	},
-	topBar: {
-		marginBottom: 10,
-	},
-	title: {
-		fontSize: 17,
-		fontWeight: '800',
-		color: '#12233f',
-	},
-	subtitle: {
-		marginTop: 2,
-		fontSize: 12,
-		color: '#55708d',
-		fontWeight: '600',
-	},
 	tablaWrap: {
+		width: '100%',
+		maxWidth: TABLE_WIDTH,
+		alignSelf: 'center',
 		borderRadius: 12,
 		overflow: 'hidden',
 		borderWidth: 1,
 		borderColor: '#d2e0ec',
 		backgroundColor: '#ffffff',
+	},
+	tablaInner: {
+		width: TABLE_WIDTH,
 	},
 	headerRow: {
 		flexDirection: 'row',
@@ -531,16 +520,17 @@ const styles = StyleSheet.create({
 	},
 	detalleGrid: {
 		flexDirection: 'row',
-		flexWrap: 'wrap',
-		gap: 10,
+		gap: 8,
 	},
 	jugadorCard: {
-		width: 190,
+		flex: 1,
+		minWidth: 0,
 		borderRadius: 12,
 		borderWidth: 1,
 		borderColor: '#dbe7f2',
 		backgroundColor: '#ffffff',
-		padding: 10,
+		paddingVertical: 8,
+		paddingHorizontal: 10,
 	},
 	jugadorCardDisabled: {
 		opacity: 0.7,
@@ -613,8 +603,8 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: '#dbe7f2',
 		backgroundColor: '#ffffff',
-		paddingVertical: 10,
-		paddingHorizontal: 12,
+		paddingVertical: 9,
+		paddingHorizontal: 10,
 	},
 	partidoRow: {
 		flexDirection: 'row',
@@ -644,17 +634,17 @@ const styles = StyleSheet.create({
 		justifyContent: 'center',
 	},
 	partidoNombre: {
-		fontSize: 12,
+		fontSize: 11,
 		fontWeight: '700',
 		color: '#1d3850',
-		maxWidth: 90,
+		maxWidth: 82,
 	},
 	partidoNombreDerecha: {
-		fontSize: 12,
+		fontSize: 11,
 		fontWeight: '700',
 		color: '#1d3850',
 		textAlign: 'right',
-		maxWidth: 90,
+		maxWidth: 82,
 	},
 	partidoCentro: {
 		alignItems: 'center',
