@@ -3,6 +3,22 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, KeyboardAv
 import { Ionicons } from '@expo/vector-icons'; // Viene con Expo
 import { useTheme } from '../theme/ThemeContext';
 
+const mostrarAlerta = (titulo, mensaje, onConfirm) => {
+  if (Platform.OS === 'web') {
+    if (typeof globalThis.alert === 'function') {
+      globalThis.alert(`${titulo}\n\n${mensaje}`);
+    }
+    onConfirm?.();
+    return;
+  }
+
+  Alert.alert(
+    titulo,
+    mensaje,
+    onConfirm ? [{ text: 'OK', onPress: onConfirm }] : [{ text: 'OK' }],
+  );
+};
+
 export default function RegistroScreen({ navigation }) {
     const { colors } = useTheme();
     // Estados para guardar lo que escribe el usuario
@@ -12,19 +28,28 @@ export default function RegistroScreen({ navigation }) {
     const [Confpassword, setConfPassword] = useState('');
     const [mostrarPassword, setMostrarPassword] = useState(false); // Nuevo estado
 
+    const volverAlLogin = () => {
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+        return;
+      }
+
+      navigation.replace('Login');
+    };
+
     const handleRegistro = async () => {
       const regexPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
       console.log("Intentando conectar a:", process.env.EXPO_PUBLIC_API_URL);
       // 1. Validaciones básicas en el cliente
       if (!usuario || !email || !password || !Confpassword) {
-        Alert.alert("Error", "Por favor, rellena todos los campos.");
+        mostrarAlerta("Error", "Por favor, rellena todos los campos.");
         return;
       }
 
 
       if (!regexPassword.test(password)) {
-        Alert.alert(
+        mostrarAlerta(
           "Contraseña débil",
           "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número."
         );
@@ -34,7 +59,7 @@ export default function RegistroScreen({ navigation }) {
       // Si pasa la validación, hacemos el fetch...
 
       if (password !== Confpassword) {
-        Alert.alert("Error", "Las contraseñas no coinciden.");
+        mostrarAlerta("Error", "Las contraseñas no coinciden.");
         return;
       }
 
@@ -56,16 +81,14 @@ export default function RegistroScreen({ navigation }) {
 
         if (response.ok) {
           // 3. Éxito
-          Alert.alert("¡Bienvenido!", "Cuenta creada correctamente.", [
-            { text: "OK", onPress: () => navigation.goBack() } 
-          ]);
+          mostrarAlerta("¡Bienvenido!", "Cuenta creada correctamente.", volverAlLogin);
         } else {
           // 4. Error desde el servidor (ej: email ya registrado)
-          Alert.alert("Error", data.error || "No se pudo realizar el registro.");
+          mostrarAlerta("Error", data.error || "No se pudo realizar el registro.");
         }
       } catch (error) {
         console.error(error);
-        Alert.alert("Error de conexión", "Asegúrate de que el servidor esté encendido y en la misma red Wi-Fi.");
+        mostrarAlerta("Error de conexión", "Asegúrate de que el servidor esté encendido y en la misma red Wi-Fi.");
       }
     };
 
@@ -165,6 +188,12 @@ export default function RegistroScreen({ navigation }) {
             >
                 <Text style={styles.buttonText}>Registrarse</Text>
             </TouchableOpacity>
+            <View style={styles.loginContainer}>
+                <Text style={styles.loginText}>¿Ya tienes cuenta? </Text>
+                <TouchableOpacity onPress={volverAlLogin}>
+                    <Text style={styles.loginLink}>Inicia sesión</Text>
+                </TouchableOpacity>
+            </View>
             </View>
         </ScrollView>
     </KeyboardAvoidingView>
@@ -212,6 +241,21 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loginText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  loginLink: {
+    color: PRIMARY_BLUE,
+    fontSize: 14,
+    fontWeight: '700',
   },
     logoContainer: {
     alignItems: 'center',
