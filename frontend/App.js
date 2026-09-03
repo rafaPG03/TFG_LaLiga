@@ -31,6 +31,41 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
+
+const withThemeSubscription = (ScreenComponent) => {
+  function ThemeSubscribedScreen(props) {
+    const { isDark } = useTheme();
+
+    return (
+      <ScreenComponent
+        {...props}
+        themeMode={isDark ? 'dark' : 'light'}
+      />
+    );
+  }
+
+  ThemeSubscribedScreen.displayName = `ThemeSubscribed(${ScreenComponent.displayName || ScreenComponent.name || 'Screen'})`;
+  return ThemeSubscribedScreen;
+};
+
+const ThemedLoginScreen = withThemeSubscription(LoginScreen);
+const ThemedRegistroScreen = withThemeSubscription(RegistroScreen);
+const ThemedInicioScreen = withThemeSubscription(InicioScreen);
+const ThemedAnalisisIAScreen = withThemeSubscription(AnalisisIAScreen);
+const ThemedTemporadaScreen = withThemeSubscription(TemporadaScreen);
+const ThemedDetalleTemporadaScreen = withThemeSubscription(DetalleTemporadaScreen);
+const ThemedEquiposScreen = withThemeSubscription(EquiposScreen);
+const ThemedDetalleEquipoScreen = withThemeSubscription(DetalleEquipoScreen);
+const ThemedJugadoresScreen = withThemeSubscription(JugadoresScreen);
+const ThemedDetalleJugadorScreen = withThemeSubscription(DetalleJugadorScreen);
+const ThemedPartidosScreen = withThemeSubscription(PartidosScreen);
+const ThemedDetallePartidoScreen = withThemeSubscription(DetallePartidoScreen);
+const ThemedSimulacionTemporadaScreen = withThemeSubscription(SimulacionTemporadaScreen);
+const ThemedAjustesScreen = withThemeSubscription(AjustesScreen);
+const ThemedPerfilScreen = withThemeSubscription(PerfilScreen);
+const ThemedEditPerfilScreen = withThemeSubscription(EditPerfilScreen);
+const ThemedCambiarContrasenaScreen = withThemeSubscription(CambiarContrasenaScreen);
+
 const AGENTE_ROUTES_OCULTAS = new Set([
   'Login',
   'Registro',
@@ -71,21 +106,21 @@ function DrawerNavigator() {
         sceneStyle: { backgroundColor: colors.background },
       }} // Usamos tu CustomHeader
     >
-      <Drawer.Screen name="Inicio" component={InicioScreen} />
-      <Drawer.Screen name="AnalisisIA" component={AnalisisIAScreen} />
-      <Drawer.Screen name="Temporadas" component={TemporadaScreen} />
-      <Drawer.Screen name="DetalleTemporada" component={DetalleTemporadaScreen} />
-      <Drawer.Screen name="Equipos" component={EquiposScreen} />
-      <Drawer.Screen name="DetalleEquipo" component={DetalleEquipoScreen} />
-      <Drawer.Screen name="Jugadores" component={JugadoresScreen} />
-      <Drawer.Screen name="DetalleJugador" component={DetalleJugadorScreen} />
-      <Drawer.Screen name="Partidos" component={PartidosScreen} />
-      <Drawer.Screen name="DetallePartido" component={DetallePartidoScreen} />
-      <Drawer.Screen name="SimulacionTemporada" component={SimulacionTemporadaScreen} />
-      <Drawer.Screen name="Ajustes" component={AjustesScreen} />
-      <Drawer.Screen name="Perfil" component={PerfilScreen} />
-      <Drawer.Screen name="EditPerfil" component={EditPerfilScreen} />
-      <Drawer.Screen name="CambiarContraseña" component={CambiarContrasenaScreen} />
+      <Drawer.Screen name="Inicio" component={ThemedInicioScreen} />
+      <Drawer.Screen name="AnalisisIA" component={ThemedAnalisisIAScreen} />
+      <Drawer.Screen name="Temporadas" component={ThemedTemporadaScreen} />
+      <Drawer.Screen name="DetalleTemporada" component={ThemedDetalleTemporadaScreen} />
+      <Drawer.Screen name="Equipos" component={ThemedEquiposScreen} />
+      <Drawer.Screen name="DetalleEquipo" component={ThemedDetalleEquipoScreen} />
+      <Drawer.Screen name="Jugadores" component={ThemedJugadoresScreen} />
+      <Drawer.Screen name="DetalleJugador" component={ThemedDetalleJugadorScreen} />
+      <Drawer.Screen name="Partidos" component={ThemedPartidosScreen} />
+      <Drawer.Screen name="DetallePartido" component={ThemedDetallePartidoScreen} />
+      <Drawer.Screen name="SimulacionTemporada" component={ThemedSimulacionTemporadaScreen} />
+      <Drawer.Screen name="Ajustes" component={ThemedAjustesScreen} />
+      <Drawer.Screen name="Perfil" component={ThemedPerfilScreen} />
+      <Drawer.Screen name="EditPerfil" component={ThemedEditPerfilScreen} />
+      <Drawer.Screen name="CambiarContraseña" component={ThemedCambiarContrasenaScreen} />
     </Drawer.Navigator>
   );
 }
@@ -141,8 +176,8 @@ function AppContent() {
           >
             
             {/* Pantallas de acceso (Sin Menú Lateral) */}
-            {!sesion && <Stack.Screen name="Login" component={LoginScreen} />}
-            {!sesion && <Stack.Screen name="Registro" component={RegistroScreen} />}
+            {!sesion && <Stack.Screen name="Login" component={ThemedLoginScreen} />}
+            {!sesion && <Stack.Screen name="Registro" component={ThemedRegistroScreen} />}
 
             {/* Pantalla Principal (QUE CONTIENE EL DRAWER) */}
             {sesion && <Stack.Screen name="MainApp" component={DrawerNavigator} />}

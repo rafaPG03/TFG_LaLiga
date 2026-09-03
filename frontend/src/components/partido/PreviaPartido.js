@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { BarChart } from "react-native-chart-kit";
 import { Dimensions } from "react-native";
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function PreviaTab({ route, navigation }) {
+  const { colors } = useTheme();
   const { h2h, destacados, estado, partidoInfo, id_partido } = route.params || {};
   const [dmData, setDmData] = useState(null);
   const [dmLoading, setDmLoading] = useState(false);
@@ -411,11 +413,30 @@ export default function PreviaTab({ route, navigation }) {
           height={220}
           fromZero
           chartConfig={{
-            backgroundGradientFrom: "#ffffff",
-            backgroundGradientTo: "#ffffff",
+            backgroundGradientFrom: colors.card,
+            backgroundGradientTo: colors.card,
             decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(18, 35, 63, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+            color: () => colors.primary,
+            labelColor: () => colors.text,
+            fillShadowGradientFrom: colors.primaryBright,
+            fillShadowGradientFromOpacity: 1,
+            fillShadowGradientTo: colors.primary,
+            fillShadowGradientToOpacity: 0.72,
+            barPercentage: 0.72,
+            barRadius: 6,
+            propsForLabels: {
+              fontWeight: '700',
+            },
+            propsForVerticalLabels: {
+              fontWeight: '700',
+            },
+            propsForHorizontalLabels: {
+              fontWeight: '600',
+            },
+            propsForBackgroundLines: {
+              stroke: colors.border,
+              strokeDasharray: '4,6',
+            },
           }}
           style={{ marginVertical: 15, borderRadius: 10 }}
         />

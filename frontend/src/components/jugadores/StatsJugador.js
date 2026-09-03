@@ -1177,7 +1177,7 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
     percentilHint: {
-        marginTop: 8,
+        marginTop: 40,
         fontSize: 11,
         color: '#6b86a1',
         fontWeight: '600',
