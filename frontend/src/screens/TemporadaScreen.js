@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,9 +18,22 @@ import CustomHeader from '../components/header';
 import { FlatList } from 'react-native-gesture-handler';
 
 export default function TemporadaScreen({navigation}) {
+   const { width } = useWindowDimensions();
    const [temporadas, setTemporadas] = useState([]);
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
+
+   const esEscritorio = Platform.OS === 'web' && width >= 768;
+   const separacionGrid = 18;
+   const columnasEscritorio = Math.max(
+      2,
+      Math.min(4, Math.floor((width - 32 + separacionGrid) / (300 + separacionGrid)))
+   );
+   const numeroColumnas = esEscritorio ? columnasEscritorio : 2;
+   const anchoTarjetaEscritorio = Math.min(
+      360,
+      (width - 32 - separacionGrid * (numeroColumnas - 1)) / numeroColumnas
+   );
 
    useEffect(() => {
       const cargarTemporadas = async () => {
@@ -79,17 +93,39 @@ export default function TemporadaScreen({navigation}) {
          onMenuPress={() => navigation.openDrawer()}
          onSearchPress={() => Alert.alert('Función de búsqueda no implementada')}
          />
-         <View style={styles.screenContent}>
+         <View style={styles.listContainer}>
             <FlatList
+               key={`temporadas-${numeroColumnas}`}
                data={temporadas}
                keyExtractor={(item) => item.temporada.toString()}
-               numColumns={2}
-               columnWrapperStyle={styles.columnWrapper}
+               numColumns={numeroColumnas}
+               columnWrapperStyle={[
+                  styles.columnWrapper,
+                  esEscritorio && styles.columnWrapperDesktop,
+               ]}
                contentContainerStyle={styles.screenContent}
                ListEmptyComponent={renderEstadoVacio}
                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.temporadaItem} onPress={() => irDetallesTemporada(item)}>
-                     <Text style={styles.numTemporada}>{item.temporada}</Text>
+                  <TouchableOpacity
+                     style={[
+                        styles.temporadaItem,
+                        esEscritorio
+                           ? [
+                                styles.temporadaItemDesktop,
+                                { width: anchoTarjetaEscritorio },
+                             ]
+                           : styles.temporadaItemMobile,
+                     ]}
+                     onPress={() => irDetallesTemporada(item)}
+                  >
+                     <Text
+                        style={[
+                           styles.numTemporada,
+                           esEscritorio && styles.numTemporadaDesktop,
+                        ]}
+                     >
+                        {item.temporada}
+                     </Text>
                   </TouchableOpacity>
                )}
             />
@@ -108,13 +144,19 @@ const styles = StyleSheet.create({
       paddingTop: 16,
       paddingBottom: 26,
   },
+   listContainer: {
+      flex: 1,
+   },
      columnWrapper: {
       justifyContent: 'space-between',
       marginBottom: 12,
-  },
+   },
+   columnWrapperDesktop: {
+      justifyContent: 'center',
+      gap: 18,
+      marginBottom: 18,
+   },
    temporadaItem: {
-      width: '48.5%',
-      aspectRatio: 1,
       borderRadius: 8,
       backgroundColor: '#ffffff',
       borderWidth: 1,
@@ -129,11 +171,21 @@ const styles = StyleSheet.create({
       shadowRadius: 4,
       elevation: 2,
    },
+   temporadaItemMobile: {
+      width: '48.5%',
+      aspectRatio: 1,
+   },
+   temporadaItemDesktop: {
+      height: 260,
+   },
    numTemporada: {
       width: '100%',
       textAlign: 'center',
       fontSize: 30,
       fontWeight: 'bold',
       color: '#333333',
+   },
+   numTemporadaDesktop: {
+      fontSize: 40,
    },
 });

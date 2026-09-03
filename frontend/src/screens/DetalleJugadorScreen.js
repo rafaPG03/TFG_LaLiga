@@ -7,6 +7,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -34,6 +35,8 @@ const JUGADOR_FALLBACK = {
 
 export default function DetalleJugadorScreen({navigation, route}) {
    const { colors } = useTheme();
+   const { width } = useWindowDimensions();
+   const pestanasExpandidas = Platform.OS === 'web' && width >= 768;
    const id_jugador = route?.params?.id_jugador ?? route?.params?.idjugador ?? route?.params?.id;
    const [loading, setLoading] = useState(true);
    const [jugadorInfo, setJugadorInfo] = useState(null);
@@ -129,8 +132,10 @@ export default function DetalleJugadorScreen({navigation, route}) {
             tabBarActiveTintColor: colors.textStrong,
                   tabBarInactiveTintColor: colors.textMuted,
                   tabBarStyle: { backgroundColor: colors.surface },
-               tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
-               tabBarScrollEnabled: true,
+               tabBarItemStyle: pestanasExpandidas
+                  ? { flex: 1, minWidth: 0, paddingHorizontal: 12 }
+                  : { width: 120, paddingHorizontal: 12 },
+               tabBarScrollEnabled: !pestanasExpandidas,
                   lazy: true,
          }}
          >
@@ -140,7 +145,7 @@ export default function DetalleJugadorScreen({navigation, route}) {
             <Tab.Screen name="PARTIDOS" options={{ tabBarLabel: 'PARTIDOS' }}>
                {() => <PartidosJugTab id_jugador={id_jugador} />}
             </Tab.Screen>
-            <Tab.Screen name="TRAYECTORIA" options={{ tabBarLabel: 'TRAYECTORÍA' }}>
+            <Tab.Screen name="TRAYECTORIA" options={{ tabBarLabel: 'TRAYECTORIA' }}>
                {() => <TrayectoriaTab id_jugador={id_jugador} />}
             </Tab.Screen>
             <Tab.Screen name="STATS" options={{ tabBarLabel: 'ANÁLISIS' }}>

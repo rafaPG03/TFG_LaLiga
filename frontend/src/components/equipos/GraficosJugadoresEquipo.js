@@ -187,8 +187,14 @@ const makeGoalSlices = (rows, labelKey, valueKey) => {
 };
 
 export default function GraficosJugadoresEquipo({ id_equipo }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
+  const chartLabelColor = isDark
+    ? "rgba(255, 255, 255, 1)"
+    : COLORS.text;
+  const chartMutedColor = isDark
+    ? "rgba(228, 242, 255, 0.82)"
+    : COLORS.muted;
   const screenWidth = Number.isFinite(Number(width)) ? Number(width) : 360;
   const chartWidth = Math.max(280, Math.min(screenWidth - 60, 700));
 
@@ -204,11 +210,11 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
   const axisStyle = useMemo(
     () => ({
       axis: { stroke: colors.border },
-      axisLabel: { fill: colors.text, fontSize: 11, padding: 34 },
-      tickLabels: { fill: colors.textMuted, fontSize: 9 },
+      axisLabel: { fill: chartLabelColor, fontSize: 11, padding: 34 },
+      tickLabels: { fill: chartMutedColor, fontSize: 9 },
       grid: { stroke: colors.border, strokeDasharray: "4,4" },
     }),
-    [colors],
+    [chartLabelColor, chartMutedColor, colors.border],
   );
 
   const cargarDatos = useCallback(
@@ -739,8 +745,8 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
         <Text style={styles.sectionTitle}>Rating por partido</Text>
         <Text style={styles.sectionSubtitle}>
           {selectedPlayer
-            ? `Evolución de ${selectedPlayer.nombre}. Solo cuentan notas superiores a 1.`
-            : "Media de los jugadores del equipo por jornada. Solo cuentan notas superiores a 1."}
+            ? `Evolución de ${selectedPlayer.nombre}.`
+            : "Media de los jugadores del equipo por jornada."}
         </Text>
         {lineData.length > 0 ? (
           <ChartShell width={chartWidth}>
@@ -830,16 +836,18 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
                 <VictoryScatter
                   data={scatterData}
                   size={0}
+                  style={{
+                    labels: {
+                      fill: chartLabelColor,
+                      fontSize: 8,
+                      fontWeight: "900",
+                    },
+                  }}
                   labels={({ datum }) => datum.initials}
                   labelComponent={
                     <VictoryLabel
                       dy={-9}
                       textAnchor="middle"
-                      style={{
-                        fill: colors.textStrong,
-                        fontSize: 8,
-                        fontWeight: "900",
-                      }}
                     />
                   }
                 />
@@ -930,7 +938,11 @@ export default function GraficosJugadoresEquipo({ id_equipo }) {
               padAngle={2}
               labels={({ datum }) => `${datum.y}`}
               style={{
-                labels: { fill: colors.text, fontSize: 11, fontWeight: "900" },
+                labels: {
+                  fill: chartLabelColor,
+                  fontSize: 11,
+                  fontWeight: "900",
+                },
               }}
             />
           </ChartShell>

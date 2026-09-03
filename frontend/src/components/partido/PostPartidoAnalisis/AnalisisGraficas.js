@@ -1084,14 +1084,13 @@ export default function AnalisisGraficas({ route }) {
 
       <ChartCard
         title="Comparativa general"
-        subtitle="Valores normalizados para comparar métricas de distinta escala."
       >
         {renderComparativaEquipos()}
       </ChartCard>
 
       <ChartCard
         title="Mapa de dominio"
-        subtitle="Radar comparativo de los dos equipos en las métricas principales."
+        subtitle="Radar comparativo de los dos equipos."
       >
         {renderRadarDominio()}
       </ChartCard>
@@ -1105,7 +1104,7 @@ export default function AnalisisGraficas({ route }) {
 
       <ChartCard
         title="Eficacia ofensiva"
-        subtitle="Tiros totales vs goles. El tamaño crece con tiros a puerta."
+        subtitle="Tiros totales vs goles."
       >
         {renderEficaciaOfensiva()}
       </ChartCard>
@@ -1140,7 +1139,7 @@ export default function AnalisisGraficas({ route }) {
 
       <ChartCard
         title="Top impacto individual"
-        subtitle="Ranking configurable por ataque, creación o defensa."
+        subtitle="Ranking por ataque, creación o defensa."
       >
         {renderTopImpacto()}
       </ChartCard>

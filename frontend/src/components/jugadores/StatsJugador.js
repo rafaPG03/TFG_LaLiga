@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BarChart, RadarChart } from 'react-native-gifted-charts';
 import Svg, { Circle, G, Image as SvgImage } from 'react-native-svg';
 import { VictoryAxis, VictoryChart, VictoryLine, VictoryScatter } from 'victory-native';
+import { useTheme } from '../../theme/ThemeContext';
 
 const ATRIBUTOS = [
     { key: 'ataque', label: 'AT' },
@@ -159,10 +160,14 @@ const MatchLogoLabel = ({ x, y, datum }) => {
 
 
 export default function StatsJugador({ id_jugador, route }) {
+    const { isDark } = useTheme();
     const jugadorId = id_jugador ?? route?.params?.id_jugador ?? route?.params?.idjugador;
     const { width } = useWindowDimensions();
     const screenWidth = Number.isFinite(Number(width)) ? Number(width) : 360;
     const lineChartWidth = Math.max(280, Math.min(screenWidth - 62, 700));
+    const radarLabelColor = isDark ? 'rgba(255, 255, 255, 1)' : 'rgba(95, 127, 155, 1)';
+    const radarGridColor = isDark ? 'rgba(112, 148, 178, 0.55)' : 'rgba(217, 229, 240, 1)';
+    const radarGridFill = isDark ? 'rgba(22, 50, 73, 1)' : 'rgba(255, 255, 255, 1)';
 
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState('');
@@ -596,16 +601,26 @@ export default function StatsJugador({ id_jugador, route }) {
                                     <RadarChart
                                         data={radarDataPrincipal}
                                         labels={radarLabels}
-                                        color={COLORES_RADAR[0]}
-                                        opacity={0.25}
                                         maxValue={10}
-                                        radius={RADAR_RADIUS}
                                         chartSize={CHART_SIZE}
-                                        showValues={false}
                                         isAnimated={false}
-                                        labelColor="#5f7f9b"
-                                        axisColor="#d9e5f0"
-                                        gridColor="#e6eef6"
+                                        labelConfig={{
+                                            stroke: radarLabelColor,
+                                            fontSize: 12,
+                                            fontWeight: '600',
+                                        }}
+                                        gridConfig={{
+                                            stroke: radarGridColor,
+                                            fill: radarGridFill,
+                                            showGradient: false,
+                                        }}
+                                        asterLinesConfig={{ stroke: radarGridColor }}
+                                        polygonConfig={{
+                                            stroke: COLORES_RADAR[0],
+                                            fill: COLORES_RADAR[0],
+                                            opacity: 0.32,
+                                        }}
+                                        chartContainerProps={{ backgroundColor: 'transparent' }}
                                     />
                                 ) : null}
                             </View>
@@ -617,16 +632,26 @@ export default function StatsJugador({ id_jugador, route }) {
                                     <RadarChart
                                         data={radarDataComparacion1}
                                         labels={radarLabels}
-                                        color={COLORES_RADAR[1]}
-                                        opacity={0.25}
                                         maxValue={10}
-                                        radius={RADAR_RADIUS}
                                         chartSize={CHART_SIZE}
-                                        showValues={false}
                                         isAnimated={false}
-                                        labelColor="#5f7f9b"
-                                        axisColor="#d9e5f0"
-                                        gridColor="#e6eef6"
+                                        labelConfig={{
+                                            stroke: radarLabelColor,
+                                            fontSize: 12,
+                                            fontWeight: '600',
+                                        }}
+                                        gridConfig={{
+                                            stroke: radarGridColor,
+                                            fill: radarGridFill,
+                                            showGradient: false,
+                                        }}
+                                        asterLinesConfig={{ stroke: radarGridColor }}
+                                        polygonConfig={{
+                                            stroke: COLORES_RADAR[1],
+                                            fill: COLORES_RADAR[1],
+                                            opacity: 0.32,
+                                        }}
+                                        chartContainerProps={{ backgroundColor: 'transparent' }}
                                     />
                                 ) : (
                                     <View style={styles.emptyCompare}>

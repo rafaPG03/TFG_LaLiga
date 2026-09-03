@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
    Image,
    FlatList,
@@ -19,10 +20,23 @@ import { useFavoritos } from '../context/FavoritosContext';
 
 export default function EquiposScreen({ navigation }) {
    const { equiposFav } = useFavoritos();
+   const { width } = useWindowDimensions();
    const [listaEquipos, setListaEquipos] = useState([]);
    const [textoBusqueda, setTextoBusqueda] = useState('');
    const [cargando, setCargando] = useState(false);
    const [errorCarga, setErrorCarga] = useState('');
+
+   const esEscritorio = Platform.OS === 'web' && width >= 768;
+   const separacionGrid = 14;
+   const columnasEscritorio = Math.max(
+      3,
+      Math.min(6, Math.floor((width - 32 + separacionGrid) / (240 + separacionGrid)))
+   );
+   const numeroColumnas = esEscritorio ? columnasEscritorio : 2;
+   const anchoTarjetaEscritorio = Math.min(
+      280,
+      (width - 32 - separacionGrid * (numeroColumnas - 1)) / numeroColumnas
+   );
 
    const handleBusqueda = (texto) => {
       setTextoBusqueda(texto);
@@ -135,15 +149,27 @@ export default function EquiposScreen({ navigation }) {
             />
          </View>
          <FlatList
+            key={`equipos-${numeroColumnas}`}
             data={equiposFiltrados}
             keyExtractor={(item) => item.id_equipo.toString()}
-            numColumns={2}
-            columnWrapperStyle={styles.columnWrapper}
+            numColumns={numeroColumnas}
+            columnWrapperStyle={[
+               styles.columnWrapper,
+               esEscritorio && styles.columnWrapperDesktop,
+            ]}
             contentContainerStyle={styles.screenContent}
             ListEmptyComponent={renderEstadoVacio}
             renderItem={({ item }) => (
                <TouchableOpacity
-                  style={styles.equipoCard}
+                  style={[
+                     styles.equipoCard,
+                     esEscritorio
+                        ? [
+                             styles.equipoCardDesktop,
+                             { width: anchoTarjetaEscritorio },
+                          ]
+                        : styles.equipoCardMobile,
+                  ]}
                   onPress={() => irDetalleEquipo(item.id_equipo)}
                   activeOpacity={0.85}
                >
@@ -155,11 +181,20 @@ export default function EquiposScreen({ navigation }) {
                   <View style={styles.logoContainer}>
                      <Image
                         source={{ uri: item.logo }}
-                        style={styles.equipoLogo}
+                        style={[
+                           styles.equipoLogo,
+                           esEscritorio && styles.equipoLogoDesktop,
+                        ]}
                         resizeMode="contain"
                      />
                   </View>
-                  <Text style={styles.equipoName} numberOfLines={2}>
+                  <Text
+                     style={[
+                        styles.equipoName,
+                        esEscritorio && styles.equipoNameDesktop,
+                     ]}
+                     numberOfLines={2}
+                  >
                      {item.nombre_equipo}
                   </Text>
                </TouchableOpacity>
@@ -197,10 +232,13 @@ const styles = StyleSheet.create({
    columnWrapper: {
       justifyContent: 'space-between',
       marginBottom: 12,
-  },
+   },
+   columnWrapperDesktop: {
+      justifyContent: 'center',
+      gap: 14,
+      marginBottom: 14,
+   },
    equipoCard: {
-      width: '48.5%',
-      aspectRatio: 1,
       borderRadius: 8,
       backgroundColor: '#ffffff',
       borderWidth: 1,
@@ -215,6 +253,13 @@ const styles = StyleSheet.create({
       shadowRadius: 4,
       elevation: 2,
       position: 'relative',
+   },
+   equipoCardMobile: {
+      width: '48.5%',
+      aspectRatio: 1,
+   },
+   equipoCardDesktop: {
+      height: 240,
    },
    favoritoFloat: {
       position: 'absolute',
@@ -232,6 +277,10 @@ const styles = StyleSheet.create({
       width: 64,
       height: 64,
    },
+   equipoLogoDesktop: {
+      width: 120,
+      height: 120,
+   },
    equipoName: {
       width: '100%',
       textAlign: 'center',
@@ -239,6 +288,11 @@ const styles = StyleSheet.create({
       fontWeight: '700',
       color: '#1d3850',
       minHeight: 36,
+   },
+   equipoNameDesktop: {
+      fontSize: 17,
+      lineHeight: 22,
+      minHeight: 44,
    },
    emptyState: {
       backgroundColor: '#ffffff',

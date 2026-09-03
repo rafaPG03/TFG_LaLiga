@@ -46,6 +46,7 @@ const PROB_COLUMNS = [
 ];
 
 const TABLE_WIDTH = COL_TEAM + PROB_COLUMNS.length * COL_PROB;
+const CONTENT_WIDTH = TABLE_WIDTH + 72;
 
 const toNumber = (valor) => {
   const n = Number(valor);
@@ -248,7 +249,7 @@ export default function MontecarloClasificacion({ temporada, equipoId }) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    maxWidth: TABLE_WIDTH,
+    maxWidth: CONTENT_WIDTH,
     alignSelf: 'center',
   },
   estadoPantalla: {

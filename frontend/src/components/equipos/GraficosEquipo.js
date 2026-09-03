@@ -697,7 +697,7 @@ export default function GraficosEquipo({ id_equipo }) {
                   axis: { stroke: COLORS.border },
                   grid: { stroke: COLORS.border },
                   tickLabels: {
-                    fill: colors.text,
+                    fill: isDark ? "rgba(255, 255, 255, 1)" : COLORS.text,
                     fontSize: 9,
                     fontWeight: "700",
                     padding: 10,

@@ -59,6 +59,16 @@ const PROB_COLUMNS = [
   },
 ];
 
+const TEAM_COLUMN_WIDTH = Platform.OS === 'web' ? 170 : 112;
+const CLASSIFICATION_COLUMN_WIDTH = Platform.OS === 'web' ? 58 : 42;
+const PROBABILITY_COLUMN_WIDTH = Platform.OS === 'web' ? 94 : 62;
+const CLASSIFICATION_TABLE_WIDTH =
+  TEAM_COLUMN_WIDTH + CLASIFICACION_COLUMNS.length * CLASSIFICATION_COLUMN_WIDTH;
+const PROBABILITY_TABLE_WIDTH =
+  TEAM_COLUMN_WIDTH + PROB_COLUMNS.length * PROBABILITY_COLUMN_WIDTH;
+const CLASSIFICATION_CONTENT_WIDTH =
+  Math.max(CLASSIFICATION_TABLE_WIDTH, PROBABILITY_TABLE_WIDTH) + 72;
+
 const toNumber = (valor) => {
   const n = Number(valor);
   return Number.isFinite(n) ? n : 0;
@@ -394,9 +404,9 @@ function ClasificacionTab({
   };
 
   const renderClasificacion = () => (
-    <View style={styles.tableWrap}>
+    <View style={[styles.tableWrap, { maxWidth: CLASSIFICATION_TABLE_WIDTH }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
+        <View style={{ width: CLASSIFICATION_TABLE_WIDTH }}>
           <View style={styles.tableHeader}>
             <View style={styles.teamHeaderCell}>
               <Text style={styles.headerText}>Pos</Text>
@@ -430,9 +440,9 @@ function ClasificacionTab({
   );
 
   const renderMontecarlo = () => (
-    <View style={styles.tableWrap}>
+    <View style={[styles.tableWrap, { maxWidth: PROBABILITY_TABLE_WIDTH }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
+        <View style={{ width: PROBABILITY_TABLE_WIDTH }}>
           <View style={styles.tableHeader}>
             <View style={styles.teamHeaderCell}>
               <Text style={styles.headerText}>Pos</Text>
@@ -482,14 +492,14 @@ function ClasificacionTab({
 
   return (
     <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
-      <View style={styles.topBlock}>
+      <View style={[styles.topBlock, styles.classificationContent]}>
         <View>
           <Text style={styles.title}>Escenario actual</Text>
         </View>
 
       </View>
 
-      <View style={styles.resultTabs}>
+      <View style={[styles.resultTabs, styles.classificationContent]}>
         {['CLASIFICACION', 'PROBABILIDADES'].map((item) => (
           <TouchableOpacity
             key={item}
@@ -504,7 +514,7 @@ function ClasificacionTab({
         ))}
       </View>
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, styles.classificationContent]}>
         <View style={styles.panelHeader}>
           <View>
             <Text style={styles.panelTitle}>
@@ -1077,6 +1087,11 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 12,
   },
+  classificationContent: {
+    width: '100%',
+    maxWidth: CLASSIFICATION_CONTENT_WIDTH,
+    alignSelf: 'center',
+  },
   resultTab: {
     flex: 1,
     height: 36,
@@ -1132,6 +1147,8 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   tableWrap: {
+    width: '100%',
+    alignSelf: 'center',
     borderWidth: 1,
     borderColor: '#e0ebf4',
     borderRadius: 8,
@@ -1144,7 +1161,7 @@ const styles = StyleSheet.create({
     minHeight: 38,
   },
   teamHeaderCell: {
-    width: 112,
+    width: TEAM_COLUMN_WIDTH,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
@@ -1157,12 +1174,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statHeaderCell: {
-    width: 42,
+    width: CLASSIFICATION_COLUMN_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
   },
   probHeaderCell: {
-    width: 62,
+    width: PROBABILITY_COLUMN_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
@@ -1178,7 +1195,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fcff',
   },
   teamCell: {
-    width: 112,
+    width: TEAM_COLUMN_WIDTH,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
@@ -1218,7 +1235,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   statCell: {
-    width: 42,
+    width: CLASSIFICATION_COLUMN_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1229,7 +1246,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   probCell: {
-    width: 62,
+    width: PROBABILITY_COLUMN_WIDTH,
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',

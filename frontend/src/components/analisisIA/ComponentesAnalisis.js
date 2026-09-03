@@ -554,7 +554,19 @@ export function ResumenMontecarlo({ datos, historico = false }) {
 }
 
 export function GraficoRadarRatings({ ratings, nombre }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
+  const radarLabelColor = isDark
+    ? "rgba(255, 255, 255, 1)"
+    : "rgba(89, 119, 143, 1)";
+  const radarGridColor = isDark
+    ? "rgba(112, 148, 178, 0.55)"
+    : "rgba(217, 229, 240, 1)";
+  const radarGridFill = isDark
+    ? "rgba(20, 40, 59, 1)"
+    : "rgba(255, 255, 255, 1)";
+  const radarPolygonColor = isDark
+    ? "rgba(88, 170, 245, 1)"
+    : "rgba(46, 134, 222, 1)";
   const campos = [
     ["Ataque", ratings?.ataque],
     ["Creación", ratings?.creacion],
@@ -585,16 +597,26 @@ export function GraficoRadarRatings({ ratings, nombre }) {
       <RadarChart
         data={data}
         labels={campos.map(([label]) => label)}
-        color={colors.primaryBright}
-        opacity={0.28}
         maxValue={10}
-        radius={104}
         chartSize={250}
-        showValues={false}
         isAnimated={false}
-        labelColor={colors.textMuted}
-        axisColor={colors.border}
-        gridColor={colors.border}
+        labelConfig={{
+          stroke: radarLabelColor,
+          fontSize: 12,
+          fontWeight: "600",
+        }}
+        gridConfig={{
+          stroke: radarGridColor,
+          fill: radarGridFill,
+          showGradient: false,
+        }}
+        asterLinesConfig={{ stroke: radarGridColor }}
+        polygonConfig={{
+          stroke: radarPolygonColor,
+          fill: radarPolygonColor,
+          opacity: 0.32,
+        }}
+        chartContainerProps={{ backgroundColor: "transparent" }}
       />
     </View>
   );

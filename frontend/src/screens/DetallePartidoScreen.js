@@ -32,6 +32,7 @@ export default function DetallePartidoScreen({navigation, route}) {
    const { colors } = useTheme();
    const { width } = useWindowDimensions();
    const esEscritorio = Platform.OS === 'web' && width >= 1000;
+   const pestanasExpandidas = Platform.OS === 'web' && width >= 768;
    const id_partido = route.params?.id_partido ?? route.params?.idpartido;
    const [loading, setLoading] = useState(true);
    const [partidoInfo, setPartidoInfo] = useState(null);
@@ -184,8 +185,10 @@ export default function DetallePartidoScreen({navigation, route}) {
             tabBarActiveTintColor: colors.textStrong,
             tabBarInactiveTintColor: colors.textMuted,
             tabBarStyle: { backgroundColor: colors.surface },
-            tabBarItemStyle: { width: 120, paddingHorizontal: 12 },
-            tabBarScrollEnabled: true,
+            tabBarItemStyle: pestanasExpandidas
+               ? { flex: 1, minWidth: 0, paddingHorizontal: 12 }
+               : { width: 120, paddingHorizontal: 12 },
+            tabBarScrollEnabled: !pestanasExpandidas,
             lazy: true,
          }}
          >

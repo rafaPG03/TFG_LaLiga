@@ -13,10 +13,10 @@ export default function AnalisisEquipo({ route }) {
     }, [datosEquipo]);
 
     const statsConfig = [
-        { key: 'posesion', label: 'Posesion', mayorMejor: true, sufijo: '%' },
+        { key: 'posesion', label: 'Posesión', mayorMejor: true, sufijo: '%' },
         { key: 'tiros_totales', label: 'Tiros', mayorMejor: true },
         { key: 'tiros_a_puerta', label: 'Tiros a puerta', mayorMejor: true },
-        { key: 'precision_tiro', label: 'Precision tiro', mayorMejor: true, sufijo: '%' },
+        { key: 'precision_tiro', label: 'Precisión de tiro', mayorMejor: true, sufijo: '%' },
         { key: 'pases_totales', label: 'Pases', mayorMejor: true },
         { key: 'pct_pases_acertados', label: 'Pases acertados', mayorMejor: true, sufijo: '%' },
         { key: 'faltas_cometidas', label: 'Faltas', mayorMejor: false },
@@ -25,7 +25,7 @@ export default function AnalisisEquipo({ route }) {
         { key: 'tarjetas_amarillas', label: 'Amarillas', mayorMejor: false },
         { key: 'tarjetas_rojas', label: 'Rojas', mayorMejor: false },
         { key: 'goles_esperados', label: 'xG', mayorMejor: true },
-        { key: 'df_goles_esperados', label: 'Dif xG', mayorMejor: true },
+        { key: 'df_goles_esperados', label: 'Dif. xG', mayorMejor: true },
     ];
 
     const formatearValor = (valor, sufijo = '') => {
@@ -60,14 +60,14 @@ export default function AnalisisEquipo({ route }) {
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            <Text style={styles.title}>Analisis de equipos</Text>
+            <Text style={styles.title}>Análisis de equipos</Text>
 
             <View style={styles.tablaWrap}>
                 <View style={styles.headerRow}>
                     <Text style={[styles.headerText, styles.colEquipo]} numberOfLines={1}>
                         {partidoInfo?.equipo_local || local.nombre_equipo || 'Local'}
                     </Text>
-                    <Text style={[styles.headerText, styles.colStat]}>Stat</Text>
+                    <Text style={[styles.headerText, styles.colStat]}>Atributo</Text>
                     <Text style={[styles.headerText, styles.colEquipo]} numberOfLines={1}>
                         {partidoInfo?.equipo_visitante || visitante.nombre_equipo || 'Visitante'}
                     </Text>
@@ -123,8 +123,8 @@ const styles = StyleSheet.create({
     headerRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 10,
+        paddingHorizontal: 5,
+        paddingVertical: 5,
         backgroundColor: '#edf3f9',
         borderBottomWidth: 1,
         borderBottomColor: '#d2e0ec',
@@ -138,8 +138,8 @@ const styles = StyleSheet.create({
     filaRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 10,
-        paddingVertical: 8,
+        paddingHorizontal: 5,
+        paddingVertical: 5,
         borderBottomWidth: 1,
         borderBottomColor: '#eef3f7',
     },
@@ -157,8 +157,8 @@ const styles = StyleSheet.create({
     },
     valorWrap: {
         minWidth: 46,
-        paddingHorizontal: 10,
-        paddingVertical: 2,
+        paddingHorizontal: 5,
+        paddingVertical: 5,
         borderBottomWidth: 2,
         borderBottomColor: 'transparent',
         borderRadius: 8,

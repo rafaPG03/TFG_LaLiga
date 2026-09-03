@@ -7,6 +7,7 @@ import {
   Platform,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +46,8 @@ function PlaceholderTab({ label }) {
 
 export default function DetalleEquipoScreen({ navigation, route }) {
   const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const pestanasExpandidas = Platform.OS === "web" && width >= 768;
   const idEquipo =
     route?.params?.idEquipo ?? route?.params?.id ?? route?.params?.id_equipo;
   const [loading, setLoading] = useState(true);
@@ -158,8 +161,10 @@ export default function DetalleEquipoScreen({ navigation, route }) {
           tabBarActiveTintColor: colors.textStrong,
           tabBarInactiveTintColor: colors.textMuted,
           tabBarStyle: { backgroundColor: colors.surface },
-          tabBarItemStyle: { flex: 1, minWidth: 0, paddingHorizontal: 8 },
-          tabBarScrollEnabled: true,
+          tabBarItemStyle: pestanasExpandidas
+            ? { flex: 1, minWidth: 0, paddingHorizontal: 8 }
+            : { width: 120, paddingHorizontal: 8 },
+          tabBarScrollEnabled: !pestanasExpandidas,
           lazy: true,
         }}
       >
@@ -169,7 +174,7 @@ export default function DetalleEquipoScreen({ navigation, route }) {
         <Tab.Screen name="Partidos" options={{ tabBarLabel: "PARTIDOS" }}>
           {() => <PartidosEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
-        <Tab.Screen name="Trayectoria" options={{ tabBarLabel: "TRAYECTORÍA" }}>
+        <Tab.Screen name="Trayectoria" options={{ tabBarLabel: "TRAYECTORIA" }}>
           {() => <TrayectoriaEquipo id_equipo={idEquipo} />}
         </Tab.Screen>
         <Tab.Screen

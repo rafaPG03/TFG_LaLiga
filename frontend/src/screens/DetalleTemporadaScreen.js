@@ -4,6 +4,7 @@ import {
 	KeyboardAvoidingView,
 	Platform,
 	StyleSheet,
+	useWindowDimensions,
 	View,
 } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -29,6 +30,8 @@ const getTemporadaLabel = (temporadaParam) => {
 
 export default function DetalleTemporadaScreen({ navigation, route }) {
 	const { colors } = useTheme();
+	const { width } = useWindowDimensions();
+	const pestanasExpandidas = Platform.OS === 'web' && width >= 768;
 	const temporadaParam = route?.params?.temporada;
 	const temporadaLabel = getTemporadaLabel(temporadaParam);
 
@@ -51,8 +54,10 @@ export default function DetalleTemporadaScreen({ navigation, route }) {
 						tabBarActiveTintColor: colors.textStrong,
 						tabBarInactiveTintColor: colors.textMuted,
 						tabBarStyle: { backgroundColor: colors.surface },
-						tabBarItemStyle: { width: 140, paddingHorizontal: 12 },
-						tabBarScrollEnabled: true,
+						tabBarItemStyle: pestanasExpandidas
+							? { flex: 1, minWidth: 0, paddingHorizontal: 12 }
+							: { width: 140, paddingHorizontal: 12 },
+						tabBarScrollEnabled: !pestanasExpandidas,
 						lazy: true,
 					}}
 				>
